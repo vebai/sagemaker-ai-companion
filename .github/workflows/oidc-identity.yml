@@ -1,0 +1,46 @@
+name: Verify AWS OIDC identity
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  verify-identity:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Configure AWS credentials using OIDC
+        uses: aws-actions/configure-aws-credentials@v6.3.0
+        with:
+          role-to-assume: arn:aws:iam::760208981862:role/sagemaker-ai-gh-oidc-test
+          aws-region: eu-west-2
+          allowed-account-ids: 760208981862
+          role-session-name: sagemaker-ai-oidc-test
+
+      - name: Verify AWS identity
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          ACCOUNT=$(aws sts get-caller-identity --query Account --output text)
+          ARN=$(aws sts get-caller-identity --query Arn --output text)
+
+          test "$ACCOUNT" = "760208981862"
+
+          case "$ARN" in
+            arn:aws:sts::760208981862:assumed-role/sagemaker-ai-gh-oidc-test/*)
+              echo "PASS: GitHub OIDC role assumption verified"
+              ;;
+            *)
+              echo "FAIL: Unexpected AWS identity"
+              exit 1
+              ;;
+          esac
+
+          echo "AWS account verified"
+          echo "No SageMaker workloads deployed"
