@@ -1,0 +1,60 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "RunPipelineSteps",
+      "Effect": "Allow",
+      "Action": [
+        "sagemaker:CreateProcessingJob",
+        "sagemaker:DescribeProcessingJob",
+        "sagemaker:StopProcessingJob",
+        "sagemaker:CreateTrainingJob",
+        "sagemaker:DescribeTrainingJob",
+        "sagemaker:StopTrainingJob",
+        "sagemaker:CreateModelPackage",
+        "sagemaker:DescribeModelPackage",
+        "sagemaker:DescribeModelPackageGroup"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "PassWorkloadRole",
+      "Effect": "Allow",
+      "Action": "iam:PassRole",
+      "Resource": "arn:aws:iam::${account_id}:role/SageMakerChurnExecutionRole",
+      "Condition": {
+        "StringEquals": {
+          "iam:PassedToService": "sagemaker.amazonaws.com"
+        }
+      }
+    },
+    {
+      "Sid": "TagPipelineCreatedResources",
+      "Effect": "Allow",
+      "Action": "sagemaker:AddTags",
+      "Resource": [
+        "arn:aws:sagemaker:eu-west-2:${account_id}:processing-job/*",
+        "arn:aws:sagemaker:eu-west-2:${account_id}:training-job/*",
+        "arn:aws:sagemaker:eu-west-2:${account_id}:model-package/*",
+        "arn:aws:sagemaker:eu-west-2:${account_id}:model-package-group/sagemaker-churn"
+      ]
+    },
+    {
+      "Sid": "ReadPipelineDecisionEvidence",
+      "Effect": "Allow",
+      "Action": [
+        "s3:GetObject"
+      ],
+      "Resource": [
+        "arn:aws:s3:::${project_bucket}/pipeline/*/evaluation/*",
+        "arn:aws:s3:::${project_bucket}/pipeline/*/release/*"
+      ]
+    },
+    {
+      "Sid": "ManageChurnModelPackageGroup",
+      "Effect": "Allow",
+      "Action": "sagemaker:CreateModelPackageGroup",
+      "Resource": "arn:aws:sagemaker:eu-west-2:${account_id}:model-package-group/sagemaker-churn"
+    }
+  ]
+}

@@ -1,0 +1,41 @@
+.venv/
+__pycache__/
+*.pyc
+.DS_Store
+.env
+.env.*
+!.env.example
+.aws/
+*.tfstate
+*.tfstate.*
+*.tfvars
+!*.tfvars.example
+.terraform/
+*.tfplan
+tfplan
+evidence/
+monitoring/capture/
+data/raw/
+data/processed/
+*.joblib
+*.tar.gz
+*.pem
+*.key
+# Generated workflow and release evidence
+workflow/latest_*
+workflow/*.json
+workflow/*.txt
+pipeline/*-execution.json
+pipeline/*-definition.json
+release-records/
+releases/
+# Generated datasets and monitoring output
+monitoring/output/
+# Model and training artefacts
+*.pkl
+model.tar.gz
+# AWS and Terraform local state
+.terraform.tfstate.lock.info
+crash.log
+crash.*.log
+# Local credentials and environment
