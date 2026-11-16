@@ -36,12 +36,9 @@ resource "aws_s3_bucket_versioning" "project" {
     status = "Enabled"
   }
 }
-# Create the GitHub OIDC provider.
-resource "aws_iam_openid_connect_provider" "github" {
+# Reuse the account-wide GitHub OIDC provider; do not own its lifecycle.
+data "aws_iam_openid_connect_provider" "github" {
   url = "https://token.actions.githubusercontent.com"
-  client_id_list = [
-    "sts.amazonaws.com"
-  ]
 }
 
 resource "aws_iam_role" "workload" {
@@ -177,7 +174,7 @@ resource "aws_iam_role" "github" {
     Statement = [{
       Effect = "Allow"
       Principal = {
-        Federated = aws_iam_openid_connect_provider.github.arn
+        Federated = data.aws_iam_openid_connect_provider.github.arn
       }
       Action = "sts:AssumeRoleWithWebIdentity"
       Condition = {
