@@ -1,0 +1,169 @@
+name: ML Release Pipeline
+on:
+  push:
+    branches: [main]
+    paths:
+      - "data/**"
+      - "processing/**"
+      - "training/**"
+      - "evaluation/**"
+      - "inference/**"
+      - "pipeline/**"
+      - "requirements.txt"
+  workflow_dispatch:
+permissions:
+  contents: read
+  id-token: write
+concurrency:
+  group: sagemaker-churn-pipeline
+  cancel-in-progress: false
+env:
+  AWS_REGION: ${{ vars.AWS_REGION }}
+  AWS_DEFAULT_REGION: ${{ vars.AWS_REGION }}
+  PROJECT_NAME: ${{ vars.PROJECT_NAME }}
+  S3_BUCKET: ${{ vars.S3_BUCKET }}
+  SAGEMAKER_ROLE_ARN: ${{ vars.SAGEMAKER_ROLE_ARN }}
+  SAGEMAKER_PIPELINE_ROLE_ARN: ${{ vars.SAGEMAKER_PIPELINE_ROLE_ARN }}
+  PIPELINE_NAME: sagemaker-churn-pipeline
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v7
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v6.3.0
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+          role-duration-seconds: 3600
+      - name: Install pinned dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
+      - name: Verify AWS identity
+        run: aws sts get-caller-identity
+      - name: Prepare release source
+        run: |
+          cp inference/inference.py \
+            pipeline/release_source/inference.py
+      - name: Build Pipeline definition
+        run: |
+          python -m py_compile \
+            pipeline/release_source/package_release.py \
+            pipeline/build_pipeline.py
+          python pipeline/build_pipeline.py
+      - name: Publish Pipeline version
+        shell: bash
+        run: |
+          if aws sagemaker describe-pipeline \
+              --pipeline-name "$PIPELINE_NAME" \
+              >/dev/null 2>&1; then
+            PIPELINE_VERSION_ID=$(
+              aws sagemaker update-pipeline \
+                --pipeline-name "$PIPELINE_NAME" \
+                --pipeline-definition \
+                file://pipeline/pipeline_definition.json \
+                --pipeline-description \
+                "Customer-churn ML workflow" \
+                --role-arn "$SAGEMAKER_PIPELINE_ROLE_ARN" \
+                --query PipelineVersionId \
+                --output text
+            )
+          else
+            aws sagemaker create-pipeline \
+              --pipeline-name "$PIPELINE_NAME" \
+              --pipeline-definition \
+              file://pipeline/pipeline_definition.json \
+              --pipeline-description \
+              "Customer-churn ML workflow" \
+              --role-arn "$SAGEMAKER_PIPELINE_ROLE_ARN"
+            PIPELINE_VERSION_ID=$(
+              aws sagemaker list-pipeline-versions \
+                --pipeline-name "$PIPELINE_NAME" \
+                --sort-order Descending \
+                --max-items 1 \
+                --query \
+                'PipelineVersionSummaries[0].PipelineVersionId' \
+                --output text
+            )
+          fi
+          echo \
+            "PIPELINE_VERSION_ID=$PIPELINE_VERSION_ID" \
+            >> "$GITHUB_ENV"
+      - name: Start Pipeline Execution
+        shell: bash
+        run: |
+          if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; then
+            TOKEN_INPUT="${GITHUB_RUN_ID}:${GITHUB_RUN_ATTEMPT}"
+          else
+            TOKEN_INPUT="${GITHUB_SHA}:${GITHUB_RUN_ATTEMPT}"
+          fi
+          CLIENT_TOKEN=$(
+            printf '%s' "$TOKEN_INPUT" \
+              | sha256sum \
+              | cut -d' ' -f1
+          )
+          EXECUTION_ARN=$(
+            aws sagemaker start-pipeline-execution \
+              --pipeline-name "$PIPELINE_NAME" \
+              --pipeline-version-id "$PIPELINE_VERSION_ID" \
+              --pipeline-execution-display-name \
+              "commit-${GITHUB_SHA:0:12}" \
+              --pipeline-parameters \
+              Name=SourceRevision,Value="$GITHUB_SHA" \
+              --client-request-token "$CLIENT_TOKEN" \
+              --query PipelineExecutionArn \
+              --output text
+          )
+          echo \
+            "PIPELINE_EXECUTION_ARN=$EXECUTION_ARN" \
+            >> "$GITHUB_ENV"
+      - name: Wait for Pipeline Execution
+        shell: bash
+        run: |
+          while true; do
+            STATUS=$(
+              aws sagemaker describe-pipeline-execution \
+                --pipeline-execution-arn \
+                "$PIPELINE_EXECUTION_ARN" \
+                --query PipelineExecutionStatus \
+                --output text
+            )
+            echo "$STATUS"
+            case "$STATUS" in
+              Succeeded)
+                break
+                ;;
+              Failed|Stopped)
+                aws sagemaker \
+                  list-pipeline-execution-steps \
+                  --pipeline-execution-arn \
+                  "$PIPELINE_EXECUTION_ARN" \
+                  --query \
+                  'PipelineExecutionSteps[?StepStatus==`Failed`].{Step:StepName,Reason:FailureReason}'
+                exit 1
+                ;;
+              *)
+                sleep 30
+                ;;
+            esac
+          done
+      - name: Show Pipeline evidence
+        run: |
+          aws sagemaker describe-pipeline-execution \
+            --pipeline-execution-arn \
+            "$PIPELINE_EXECUTION_ARN" \
+            --query \
+            '{Status:PipelineExecutionStatus,Version:PipelineVersionId}'
+          aws sagemaker list-pipeline-execution-steps \
+            --pipeline-execution-arn \
+            "$PIPELINE_EXECUTION_ARN" \
+            --query \
+            'PipelineExecutionSteps[].{Step:StepName,Status:StepStatus,Attempts:AttemptCount,Metadata:Metadata}'

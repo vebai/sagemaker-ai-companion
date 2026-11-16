@@ -1,0 +1,4 @@
+aws_region   = "eu-west-2"
+project_name = "sagemaker-churn"
+environment  = "dev"
+github_oidc_subject = "<exact OIDC subject established in Chapter 7>"

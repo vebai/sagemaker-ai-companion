@@ -6,6 +6,10 @@ cd "$ROOT"
 
 echo "=== SageMaker AI companion validation ==="
 
+# Initialise providers without accessing or modifying backend state.
+terraform -chdir=infrastructure/terraform init -backend=false -input=false >/dev/null
+terraform -chdir=infrastructure/terraform-legacy init -backend=false -input=false >/dev/null
+
 echo
 echo "[1/5] Python syntax"
 python - <<'PY'
@@ -51,7 +55,7 @@ python - <<'PY'
 from pathlib import Path
 import json
 
-root = Path("infrastructure/terraform")
+root = Path("infrastructure/terraform-legacy")
 account = "123456789012"
 bucket = f"sagemaker-churn-{account}-eu-west-2"
 
@@ -80,8 +84,8 @@ PY
 
 echo
 echo "[4/5] Terraform validation"
-terraform -chdir=infrastructure/terraform fmt -check -recursive
-terraform -chdir=infrastructure/terraform validate
+terraform -chdir=infrastructure/terraform-legacy fmt -check -recursive
+terraform -chdir=infrastructure/terraform-legacy validate
 echo "PASS: Terraform"
 
 echo
@@ -89,7 +93,7 @@ echo "[5/5] Account-specific reference check"
 python - <<'PY'
 from pathlib import Path
 
-root = Path("infrastructure/terraform")
+root = Path("infrastructure/terraform-legacy")
 
 for path in root.rglob("*"):
     if not path.is_file():
@@ -109,5 +113,22 @@ print("PASS: No original account ID in Terraform source")
 PY
 
 echo
+echo
+echo "[6/6] Canonical Chapter 8 Terraform and shared OIDC safety"
+python - <<'PY'
+from pathlib import Path
+main = Path("infrastructure/terraform/main.tf").read_text()
+outputs = Path("infrastructure/terraform/outputs.tf").read_text()
+assert 'data "aws_iam_openid_connect_provider" "github"' in main
+assert 'resource "aws_iam_openid_connect_provider"' not in main
+assert 'data.aws_iam_openid_connect_provider.github.arn' in main
+assert 'data.aws_iam_openid_connect_provider.github.arn' in outputs
+print("PASS: shared GitHub OIDC provider referenced without lifecycle ownership")
+PY
+
+echo "[6/6] Manuscript Chapter 8 Terraform validation"
+terraform -chdir=infrastructure/terraform validate
+echo "PASS: Manuscript Terraform"
+
 echo "=== VALIDATION PASSED ==="
 echo "No AWS resources created or modified."

@@ -4,7 +4,7 @@
 **Book:** Chapters 4–6 and 10 · **Cost:** processing, training and evaluation launch billable SageMaker jobs; registry operations alter AWS state
 
 ## Before running
-From the repository root, activate Python and `source scripts/setup-env.sh`. Complete [project infrastructure](../README.md#6-review-and-deploy-the-supporting-aws-infrastructure), upload the raw CSV to `s3://$S3_BUCKET/raw/customer_churn.csv` and verify the relevant operation-specific quotas. The workflow scripts depend on outputs of earlier steps; they are **not** a single orchestration command.
+From the repository root, activate Python and `source scripts/setup-env.sh`. Complete [project infrastructure](../README.md#5-set-up-aws-infrastructure-in-the-books-order), upload the raw CSV to `s3://$S3_BUCKET/raw/customer_churn.csv` and verify the relevant operation-specific quotas. The workflow scripts depend on outputs of earlier steps; they are **not** a single orchestration command.
 
 ## Run in order and inspect each hand-off
 

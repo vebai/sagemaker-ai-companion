@@ -27,8 +27,16 @@ jobs:
         with:
           terraform_version: '1.17.1'
 
-      - name: Initialise Terraform without backend
-        run: terraform -chdir=infrastructure/terraform init -backend=false -input=false
+      - name: Initialise legacy Terraform without backend
+        run: terraform -chdir=infrastructure/terraform-legacy init -backend=false -input=false
+
+      - name: Validate manuscript Chapter 8 Terraform without backend
+        run: |
+          terraform -chdir=infrastructure/terraform init -backend=false -input=false
+          terraform -chdir=infrastructure/terraform validate
+
+      - name: Test Chapter 8 plan safety guard
+        run: python scripts/test-review-chapter8-plan.py
 
       - name: Run offline validation
         run: bash scripts/validate.sh
