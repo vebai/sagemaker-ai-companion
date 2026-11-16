@@ -7,9 +7,9 @@ This is the official companion repository for *Deploying Machine Learning with A
 
 **What you gain:** A reproducible, evidence-backed path from a dataset to a working, verified SageMaker prediction service — including the skills to understand each stage, diagnose failures, control AWS costs and safely clean up the environment. The book provides the engineering explanations and decisions; this repository makes the practical implementation easier to follow and repeat.
 
-**Start safely:** You can clone, install dependencies, generate example data and run offline checks **without creating AWS resources**. Running managed processing, training or a real-time endpoint **can incur AWS charges**. You must create the AWS foundation before submitting jobs. The code does not automatically deploy an endpoint or clean up your account.
+**Start safely:** You can clone, install dependencies, generate example data and run offline checks **without creating AWS resources**. Running managed processing, training or a real-time endpoint **can incur AWS charges**. Complete the book's Chapter 4 AWS foundation before submitting jobs. The code does not automatically deploy an endpoint or clean up your account.
 
-**Where to start:** [Install the tools](#2-install-tools-on-your-workstation) → [Clone and check the code](#3-clone-configure-python-and-verify-identity) → [Set up AWS infrastructure](#5-bootstrap-a-private-s3-backend-for-terraform) → [Run the exercises](#7-run-the-learning-workflow) → [Clean up](#10-cleanup-stop-charges-and-remove-only-your-project).
+**Where to start:** [Install the tools](#2-install-tools-on-your-workstation) → [Clone and check the code](#3-clone-configure-python-and-verify-identity) → [Set up AWS infrastructure](#5-set-up-aws-infrastructure-in-the-books-order) → [Run the exercises](#7-run-the-learning-workflow) → [Clean up](#10-cleanup-stop-charges-and-remove-only-your-project).
 
 ## Read this first — what runs where?
 
@@ -19,7 +19,7 @@ This is the official companion repository for *Deploying Machine Learning with A
 | Generate data; run local processing | Local Mac/Linux | No AWS changes | CSV dataset and split files |
 | Run `scripts/validate.sh` | Local Mac/Linux | No AWS changes | Offline source/Terraform checks pass |
 | Run `scripts/setup-env.sh` | Local shell, reads AWS STS | Read-only AWS call | Correct AWS account, Region and bucket name |
-| Terraform `apply` | Local shell → AWS | **Creates infrastructure** | Project bucket and IAM roles exist |
+| Chapter 4 manual infrastructure setup; Chapter 8 Terraform adoption | Local shell → AWS | **Creates or adopts infrastructure** | Verified bucket and IAM roles; reviewed Terraform state |
 | Submit processing, training or evaluation | Local shell → SageMaker | **Billable managed jobs** | Job reaches `Completed`, outputs exist |
 | Register/approve a model | Local shell → SageMaker | **Changes registry state** | Correct package and approval evidence |
 | Deploy an endpoint (book Chapter 6) | AWS | **Billable while running, even when idle** | Inference request verified |
@@ -32,7 +32,8 @@ This is the official companion repository for *Deploying Machine Learning with A
 ```text
 Local Mac/Linux shell
   ├── Python dataset generation ──> S3 raw/customer_churn.csv
-  ├── Terraform ──> project S3 bucket + two SageMaker IAM roles
+  ├── Chapter 4 AWS setup ──> project S3 bucket + SageMaker execution role
+  ├── Chapter 8 Terraform ──> adopt existing project/CI identity resources
   └── SageMaker submissions (managed AWS compute; billed when used)
         Processing ──> S3 processed/{train,validation,test}/data.csv
         Training ──> S3 model.tar.gz
@@ -48,13 +49,22 @@ Local Mac/Linux shell
 
 **Environment:** AWS Region `eu-west-2` (London); Python **3.11**; pinned dependencies from [requirements.txt](requirements.txt); Terraform **>= 1.10** with AWS provider 6.x. Examples in `workflow/` and `pipeline/` currently request **`ml.m5.xlarge`** for processing/training and **`ml.m5.large`** for real-time inference. These instance types must be available and permitted in *your* account and Region.
 
-## Following the book exactly
+## Using this repository with the book
 
-The manuscript calls the local working directory **`sagemaker-churn`** and creates files under `data/`, `processing/`, `training/`, `workflow/`, `inference/`, `evaluation/`, `pipeline/` and `infrastructure/`. The clone command below gives the downloaded repository **that same local directory name**; GitHub's remote repository name does not determine its local folder name.
+This repository accompanies *Deploying Machine Learning with Amazon SageMaker AI*. Use its files while following the book's practical exercises in chapter order. The book explains the engineering decisions; these files make implementation and verification easier to repeat.
 
-**Choose one implementation path.** To follow the manuscript step by step, use its manual S3/IAM creation instructions in Chapter 4, and then proceed with the supplied source files. The canonical `infrastructure/terraform/` directory now contains the **complete Chapter 8 Terraform source from the book**. The previous eight-resource configuration is retained under `infrastructure/terraform-legacy/` for audit only. Do not mix their states or apply over manually created resources. In the book's ordered path, create the initial S3/IAM resources in Chapter 4 and **adopt them into Terraform during Chapter 8**; do not blindly create duplicates.
+Clone into the same local project directory used in the book:
 
-The manuscript creates `workflow/env.sh` locally in Chapter 4. This is an **account-specific generated file**, deliberately absent from Git. For the same environment exports, you can instead source the repository's `scripts/setup-env.sh` in each terminal; the two are alternatives, not consecutive requirements.
+```bash
+git clone https://github.com/vebai/sagemaker-ai-companion.git sagemaker-churn
+cd sagemaker-churn
+```
+
+Use the book's Chapter 4 instructions to establish your AWS bucket and execution role. Later, Chapter 8 teaches how to bring the existing infrastructure under Terraform management. **Do not run Terraform against manually created resources until the book's ownership and import steps have been completed.**
+
+The book generates `workflow/env.sh` during Chapter 4. For this repository you can instead run `source scripts/setup-env.sh` to export the project variables into your current shell. It reads your AWS identity but does not create resources or grant permissions. You need only **one** environment setup method.
+
+Each folder README identifies its prerequisites, inputs, command, expected evidence and cleanup. Check your account, Region, service quotas and AWS costs before running managed workloads.
 
 ## 1. Before creating anything in AWS
 
@@ -163,41 +173,19 @@ terraform -chdir=infrastructure/terraform init -backend=false -input=false
 ./scripts/validate.sh
 ```
 
-**What this quick check proves:** Python source parses; pinned dependencies are declared; IAM policy templates render as valid JSON; Terraform configuration validates; and the source does not contain a fixed 12-digit account number. **What it does not prove:** permissions in your account, resource creation, completed jobs, model quality or endpoint health.
+**What this quick check proves:** Python source parses; pinned dependencies are declared; legacy IAM templates render as valid JSON; both Terraform configurations validate; and the source does not contain a fixed 12-digit account number. **What it does not prove:** permissions in your account, resource creation, completed jobs, model quality or endpoint health.
 
-This checks Python syntax, pinned dependencies, IAM policy templates, Terraform formatting/validation and accidental fixed account IDs in Terraform source. The first command downloads Terraform providers; **neither command deploys SageMaker resources**. GitHub's [Validate companion code](.github/workflows/validate.yml) runs similar checks on pushes. The separate [OIDC identity test](.github/workflows/oidc-identity.yml) is for the author's AWS account only; it is **not** a reader deployment workflow and does not grant a reader permissions.
+This checks Python syntax, pinned dependencies, legacy IAM policy templates and the Terraform configurations. It performs no AWS deployment. The first command downloads Terraform providers; **neither command deploys SageMaker resources**. GitHub's [Validate companion code](.github/workflows/validate.yml) runs similar checks on pushes. The separate [OIDC identity test](.github/workflows/oidc-identity.yml) is for the author's AWS account only; it is **not** a reader deployment workflow and does not grant a reader permissions.
 
-## 5. Bootstrap a private S3 backend for Terraform
+## 5. Set up AWS infrastructure in the book's order
 
-**Book execution order:** In Chapter 4 use the manual S3/IAM setup; carry that workload through the book's earlier exercises. At Chapter 8, create or verify the independent Terraform state backend and **import** the book's already-created resources, including an existing shared GitHub OIDC provider only if this state is explicitly authorised to own its full lifecycle. Do not run the `terraform apply` example below as a shortcut for the manuscript's adoption sequence. The existing provider must not be recreated or accidentally destroyed.
+**Chapter 4 — create and verify the initial project resources.** Follow the book to create your project S3 bucket, the SageMaker execution role and its permissions. Verify the actual bucket, role trust, caller identity and `iam:PassRole` before running managed processing or training. **Do not run Terraform yet.** The repository supplies source files; cloning it does not create any AWS resources.
 
-**Mandatory gate before managed jobs:** Your own project S3 bucket and SageMaker execution roles must exist and the caller must have the correct permissions. Follow the book's Chapter 4 manual setup **or** Sections 5–6 here for an isolated fresh lab. Do **not** perform both setups against the same resources. The Terraform path here is a smaller alternative and does not reproduce Chapter 8's full GitHub OIDC ownership exercise.
+**Chapter 7 — build the Pipeline and configure its execution role.** The book's [ML release workflow](examples/chapter-07/ml-release.yml) is supplied as an **inactive reference file**. Moving it into `.github/workflows/` will enable its triggers and can launch billable managed jobs. Keep it inactive until AWS role trust, required repository variables, instance quotas, approval gates and cost controls are confirmed.
 
-Skip this section if your organisation provides an **approved, dedicated Terraform backend**; use its bucket and key instead. The backend holds **sensitive infrastructure state** and is not managed by this project stack.
+**Chapter 8 — adopt existing infrastructure into Terraform.** The canonical [`infrastructure/terraform/`](infrastructure/terraform/README.md) contains the full Chapter 8 book configuration (11 resources including GitHub OIDC infrastructure). The book explains when to import rather than create existing resources. Do not use `terraform apply` to create duplicate S3 buckets, IAM roles or a shared GitHub OIDC provider.
 
-For a new isolated personal lab, source `scripts/setup-env.sh`, then set a globally unique backend bucket name (adjust the suffix if already taken). The example creates a bucket; **it can incur storage/request costs**.
-
-```bash
-export TF_STATE_BUCKET="sagemaker-tfstate-$(aws sts get-caller-identity --query Account --output text)-eu-west-2"
-aws s3api head-bucket --bucket "$TF_STATE_BUCKET" 2>/dev/null && {
-  echo "STOP: Backend bucket exists; inspect ownership/state before proceeding"
-  exit 1
-}
-aws s3api create-bucket --bucket "$TF_STATE_BUCKET" \
-  --region eu-west-2 \
-  --create-bucket-configuration LocationConstraint=eu-west-2
-aws s3api put-public-access-block --bucket "$TF_STATE_BUCKET" \
-  --public-access-block-configuration \
-  BlockPublicAcls=true,IgnorePublicAcls=true,BlockPublicPolicy=true,RestrictPublicBuckets=true
-aws s3api put-bucket-encryption --bucket "$TF_STATE_BUCKET" \
-  --server-side-encryption-configuration \
-  '{"Rules":[{"ApplyServerSideEncryptionByDefault":{"SSEAlgorithm":"AES256"}}]}'
-aws s3api put-bucket-versioning --bucket "$TF_STATE_BUCKET" \
-  --versioning-configuration Status=Enabled
-aws s3api get-bucket-versioning --bucket "$TF_STATE_BUCKET"
-```
-
-**Before Terraform init:** confirm that the operator has `s3:ListBucket` on the state bucket, `s3:GetObject`/`s3:PutObject` on the state key, and the lock-file permissions (`s3:GetObject`, `s3:PutObject`, `s3:DeleteObject` on the `.tflock` key). Follow the book's more detailed policy guidance. The Terraform configuration already declares `use_lockfile = true`.
+First create or identify a **separate, private S3 Terraform state bucket** according to Chapter 8. The state bucket must not be the project data bucket, and its lifecycle must be managed separately. Set `github_oidc_subject` to the exact subject of your GitHub repository, not the author's value. Initialise the backend with the same key as the book's Chapter 8 example:
 
 ```bash
 terraform -chdir=infrastructure/terraform init -reconfigure \
@@ -205,34 +193,27 @@ terraform -chdir=infrastructure/terraform init -reconfigure \
   -backend-config="key=sagemaker-churn/dev/terraform.tfstate" \
   -backend-config="region=eu-west-2" \
   -backend-config="encrypt=true"
-
-terraform -chdir=infrastructure/terraform validate
-terraform -chdir=infrastructure/terraform workspace show
-terraform -chdir=infrastructure/terraform state list
 ```
 
-**Stop if the backend already contains state you do not own.** Never initialise a new empty backend over a prior deployment and assume Terraform now owns its existing resources.
+**Before running this**, define `TF_STATE_BUCKET` for a state bucket you own and verify that its existing state belongs to this specific project. Initialise and validate, then follow the book's exact import and plan-review sequence. The GitHub OIDC provider at `token.actions.githubusercontent.com` may already be shared by other repositories: never import, replace or destroy it without ownership approval.
 
-## 6. Adopt and verify the book's Chapter 8 Terraform infrastructure
+## 6. Verify the Chapter 8 configuration before changes
 
-**Do not run an unreviewed fresh apply here.** The book's Chapter 8 uses `terraform import` to adopt previously created project resources. An already-existing account-wide GitHub OIDC provider is **shared infrastructure**: verify current ownership and use a separately governed import/adoption decision. The example plan/apply below is applicable only after the complete adoption and resource-ownership sequence has been followed.
-
-**Canonical Chapter 8 Terraform:** The stack in [infrastructure/terraform/](infrastructure/terraform/) reproduces the book's full configuration: project S3 bucket and its three controls, two SageMaker IAM roles and their policies, a GitHub OIDC provider, GitHub delivery role and policy (**11 managed resources**). The earlier eight-resource stack is archived under [infrastructure/terraform-legacy/](infrastructure/terraform-legacy/) and must never share the canonical stack's backend key. The canonical configuration does **not** manage SageMaker jobs, model packages, endpoints or CloudWatch logs.
+From the repository root, while using your approved AWS profile:
 
 ```bash
 source scripts/setup-env.sh
 aws sts get-caller-identity
+terraform -chdir=infrastructure/terraform validate
+terraform -chdir=infrastructure/terraform workspace show
+terraform -chdir=infrastructure/terraform state list
 terraform -chdir=infrastructure/terraform plan -out=project.tfplan
 terraform -chdir=infrastructure/terraform show project.tfplan
-# Only after confirming the account, Region and exact resource changes:
-terraform -chdir=infrastructure/terraform apply project.tfplan
-
-aws s3api head-bucket --bucket "$S3_BUCKET"
-aws iam get-role --role-name SageMakerChurnExecutionRole
-aws iam get-role --role-name SageMakerChurnPipelineRole
 ```
 
-The plan file is written inside the Terraform directory; **do not commit it**. This is an intentionally small teaching configuration, not a production security blueprint. AWS identity-based permissions and organisations' guardrails must be reviewed separately; the IAM role policies in Terraform do not automatically authorise your human/CI caller to invoke SageMaker. Allow for IAM propagation and verify the actual caller and role permissions rather than blindly retrying `AccessDenied`.
+**Stop here and review the output.** A plan is not an authorisation to apply. Only after completing the book's import steps, confirming resource ownership and reviewing the complete proposed changes should you run `terraform -chdir=infrastructure/terraform apply project.tfplan`. Provider, role and state ownership must be reviewed individually.
+
+Terraform does not deploy SageMaker jobs, models or endpoints. The GitHub workflow remains inactive unless you deliberately enable it. This repository's Terraform checks were validated offline; a new, independent clean-account live deployment of this full Chapter 8 configuration has not been established.
 
 ## 7. Run the learning workflow
 
@@ -357,7 +338,7 @@ Use this as the learning path; each link opens the relevant directory README. Th
 | [workflow/](workflow/) | Orchestrate manual stages, package and register releases | Managed jobs and AWS changes | 4–5 |
 | [pipeline/](pipeline/) | Build an automated definition; publish/run via book | Local build; billable when run | 7 |
 | [pipeline/release_source/](pipeline/release_source/) | Supporting code bundled into the Pipeline release | Runs inside Pipeline | 7 |
-| [infrastructure/terraform/](infrastructure/terraform/) | **Before managed jobs:** project bucket and IAM roles | Creates/destroys AWS infrastructure | 8 |
+| [infrastructure/terraform/](infrastructure/terraform/) | **Chapter 8:** adopt and govern the book's full infrastructure configuration | Manages AWS infrastructure | 8 |
 | [scripts/](scripts/) | **Start here:** read AWS identity; offline validation | Read-only / local | Start |
 
 Follow the linked README for each stage's **prerequisites → inputs → command → output → verification → next step**. The top-level `inference/` file is the manual release-serving implementation; `pipeline/release_source/` contains the corresponding code packaged by the managed Pipeline. They must remain compatible with the evaluated model. Generated files, credentials, local models and Terraform state should remain **outside Git**.
