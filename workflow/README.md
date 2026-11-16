@@ -1,7 +1,7 @@
 # Managed jobs, registration and release records
 
 **Path:** [Data](../data/README.md) → [Process](../processing/README.md) → [Train](../training/README.md) → [Evaluate](../evaluation/README.md) → **Package and register** → [Inference](../inference/README.md)  
-**Book:** Chapters 4–5 · **Cost:** processing, training and evaluation launch billable SageMaker jobs; registry operations alter AWS state
+**Book:** Chapters 4–6 and 10 · **Cost:** processing, training and evaluation launch billable SageMaker jobs; registry operations alter AWS state
 
 ## Before running
 From the repository root, activate Python and `source scripts/setup-env.sh`. Complete [project infrastructure](../README.md#6-review-and-deploy-the-supporting-aws-infrastructure), upload the raw CSV to `s3://$S3_BUCKET/raw/customer_churn.csv` and verify the relevant operation-specific quotas. The workflow scripts depend on outputs of earlier steps; they are **not** a single orchestration command.
@@ -27,5 +27,7 @@ aws sagemaker describe-processing-job \
 ```
 
 All managed submissions use asynchronous execution: a returned job name means **submitted**, not **completed**. The complete command sequence and evidence checks are in the [root README](../README.md#7-run-the-learning-workflow). Do not run later steps while an earlier job is pending or failed; do not approve a failing model. Check that your caller can `iam:PassRole` and that the managed execution role has S3 and ECR access.
+
+**Additional manuscript files:** Chapter 4 generates `workflow/env.sh` locally and it remains gitignored. Chapter 6 uses [`write_deployment_verification.py`](write_deployment_verification.py) after a successful deployment to write a separate, durable verification record; it requires the known request, local and hosted responses and the exported model/endpoint identifiers. Chapter 10 defines [`empty_versioned_bucket.sh`](empty_versioned_bucket.sh) for *deliberate* deletion of verified versioned S3 objects. Preserve evidence and confirm the exact bucket before sourcing or invoking it. Neither script runs automatically.
 
 **Failure boundary:** missing `latest_*` file means a hand-off is incomplete; `AccessDenied`, quota or S3 errors must be resolved at the failed boundary. **Cleanup:** record evidence first, remove endpoints and Registry resources in dependency order, then project storage and infrastructure according to [cleanup instructions](../README.md#10-cleanup-stop-charges-and-remove-only-your-project). **Next:** [Inference](../inference/README.md) or [Pipeline automation](../pipeline/README.md).
