@@ -48,6 +48,14 @@ Local Mac/Linux shell
 
 **Environment:** AWS Region `eu-west-2` (London); Python **3.11**; pinned dependencies from [requirements.txt](requirements.txt); Terraform **>= 1.10** with AWS provider 6.x. Examples in `workflow/` and `pipeline/` currently request **`ml.m5.xlarge`** for processing/training and **`ml.m5.large`** for real-time inference. These instance types must be available and permitted in *your* account and Region.
 
+## Following the book exactly
+
+The manuscript calls the local working directory **`sagemaker-churn`** and creates files under `data/`, `processing/`, `training/`, `workflow/`, `inference/`, `evaluation/`, `pipeline/` and `infrastructure/`. The clone command below gives the downloaded repository **that same local directory name**; GitHub's remote repository name does not determine its local folder name.
+
+**Choose one implementation path.** To follow the manuscript step by step, use its manual S3/IAM creation instructions in Chapter 4, and then proceed with the supplied source files. The root README also documents a smaller **optional** eight-resource Terraform foundation. It is **not the full Chapter 8 Terraform exercise**, which includes additional GitHub identity resources. Do not mix their states, apply the smaller Terraform stack over manually created resources, or run the book's full Chapter 8 imports against the smaller module.
+
+The manuscript creates `workflow/env.sh` locally in Chapter 4. This is an **account-specific generated file**, deliberately absent from Git. For the same environment exports, you can instead source the repository's `scripts/setup-env.sh` in each terminal; the two are alternatives, not consecutive requirements.
+
 ## 1. Before creating anything in AWS
 
 - Use your **own authorised AWS account**, preferably a disposable learning account, with billing alerts/budgets configured. Do not experiment in an employer's production account.
@@ -109,8 +117,8 @@ For Fedora/RHEL, use the official HashiCorp and AWS CLI installation guides for 
 Run commands from the **repository root** unless a section says otherwise. Open a new terminal and source the virtual environment again each time.
 
 ```bash
-git clone https://github.com/vebai/sagemaker-ai-companion.git
-cd sagemaker-ai-companion
+git clone https://github.com/vebai/sagemaker-ai-companion.git sagemaker-churn
+cd sagemaker-churn
 python3.11 -m venv .venv
 source .venv/bin/activate
 python -m pip install --upgrade pip
@@ -161,7 +169,7 @@ This checks Python syntax, pinned dependencies, IAM policy templates, Terraform 
 
 ## 5. Bootstrap a private S3 backend for Terraform
 
-**Mandatory gate before managed jobs:** Your own project S3 bucket and SageMaker execution roles must exist and the caller must have the correct permissions. Complete this infrastructure section and Section 6 first; don't proceed just because local validation passed.
+**Mandatory gate before managed jobs:** Your own project S3 bucket and SageMaker execution roles must exist and the caller must have the correct permissions. Follow the book's Chapter 4 manual setup **or** Sections 5–6 here for an isolated fresh lab. Do **not** perform both setups against the same resources. The Terraform path here is a smaller alternative and does not reproduce Chapter 8's full GitHub OIDC ownership exercise.
 
 Skip this section if your organisation provides an **approved, dedicated Terraform backend**; use its bucket and key instead. The backend holds **sensitive infrastructure state** and is not managed by this project stack.
 
@@ -205,7 +213,7 @@ terraform -chdir=infrastructure/terraform state list
 
 ## 6. Review and deploy the supporting AWS infrastructure
 
-The Terraform stack in [infrastructure/terraform/](infrastructure/terraform/) manages **eight resources**: one project S3 bucket, its public-access/versioning/encryption controls, two SageMaker IAM roles and two inline policies. It does **not** deploy managed SageMaker jobs, pipelines, models, endpoints, CloudWatch logs or the GitHub OIDC provider.
+**Optional companion Terraform foundation (not the complete book Chapter 8 configuration):** The Terraform stack in [infrastructure/terraform/](infrastructure/terraform/) manages **eight resources**: one project S3 bucket, its public-access/versioning/encryption controls, two SageMaker IAM roles and two inline policies. It does **not** deploy managed SageMaker jobs, pipelines, models, endpoints, CloudWatch logs or the GitHub OIDC provider.
 
 ```bash
 source scripts/setup-env.sh
