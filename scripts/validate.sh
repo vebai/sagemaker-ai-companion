@@ -6,6 +6,17 @@ cd "$ROOT"
 
 echo "=== SageMaker AI companion validation ==="
 
+echo "[preflight] Script permissions and Bash syntax"
+test -x scripts/validate.sh || {
+  echo "scripts/validate.sh is not executable; run: chmod +x ./scripts/validate.sh" >&2
+  exit 1
+}
+for script in scripts/*.sh workflow/*.sh; do
+  bash -n "$script"
+  echo "PASS: Bash syntax: $script"
+done
+echo "Note: scripts/setup-env.sh and workflow/empty_versioned_bucket.sh are sourced helpers."
+
 # Initialise providers without accessing or modifying backend state.
 terraform -chdir=infrastructure/terraform init -backend=false -input=false >/dev/null
 terraform -chdir=infrastructure/terraform-legacy init -backend=false -input=false >/dev/null
