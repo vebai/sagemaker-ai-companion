@@ -114,6 +114,18 @@ PY
 
 echo
 echo
+echo "[6/6] Canonical Chapter 8 Terraform and shared OIDC safety"
+python - <<'PY'
+from pathlib import Path
+main = Path("infrastructure/terraform/main.tf").read_text()
+outputs = Path("infrastructure/terraform/outputs.tf").read_text()
+assert 'data "aws_iam_openid_connect_provider" "github"' in main
+assert 'resource "aws_iam_openid_connect_provider"' not in main
+assert 'data.aws_iam_openid_connect_provider.github.arn' in main
+assert 'data.aws_iam_openid_connect_provider.github.arn' in outputs
+print("PASS: shared GitHub OIDC provider referenced without lifecycle ownership")
+PY
+
 echo "[6/6] Manuscript Chapter 8 Terraform validation"
 terraform -chdir=infrastructure/terraform validate
 echo "PASS: Manuscript Terraform"
