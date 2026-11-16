@@ -53,12 +53,7 @@ Local Mac/Linux shell
 
 This repository accompanies *Deploying Machine Learning with Amazon SageMaker AI*. Use its files while following the book's practical exercises in chapter order. The book explains the engineering decisions; these files make implementation and verification easier to repeat.
 
-Clone into the same local project directory used in the book:
-
-```bash
-git clone https://github.com/vebai/sagemaker-ai-companion.git sagemaker-churn
-cd sagemaker-churn
-```
+[Start with installation and cloning](#3-clone-configure-python-and-verify-identity). The clone command creates the book's local `sagemaker-churn` directory.
 
 Use the book's Chapter 4 instructions to establish your AWS bucket and execution role. Later, Chapter 8 teaches how to bring the existing infrastructure under Terraform management. **Do not run Terraform against manually created resources until the book's ownership and import steps have been completed.**
 
