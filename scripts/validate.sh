@@ -6,6 +6,10 @@ cd "$ROOT"
 
 echo "=== SageMaker AI companion validation ==="
 
+# Initialise providers without accessing or modifying backend state.
+terraform -chdir=infrastructure/terraform init -backend=false -input=false >/dev/null
+terraform -chdir=infrastructure/terraform-legacy init -backend=false -input=false >/dev/null
+
 echo
 echo "[1/5] Python syntax"
 python - <<'PY'
