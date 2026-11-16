@@ -8,8 +8,11 @@
 python3.11 -m venv .venv
 source .venv/bin/activate
 python -m pip install -r requirements.txt
+chmod +x ./scripts/validate.sh
 ./scripts/validate.sh
 ```
+
+When cloned with Git, `validate.sh` already has the executable bit. The `chmod` line is a safe fallback for ZIP downloads or copied files that lost executable permissions. Python programs are invoked with `python`, so they do not require an executable bit. `scripts/setup-env.sh` must be **sourced** and `workflow/empty_versioned_bucket.sh` defines a function that must be sourced deliberately; neither should be run as a standalone workload.
 
 **Verify:** offline validation reports its checks as PASS. The script initialises Terraform providers without using a backend and does not create cloud resources.
 
