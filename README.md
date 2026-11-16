@@ -177,7 +177,7 @@ This checks Python syntax, pinned dependencies, legacy IAM policy templates and 
 
 **Chapter 7 — build the Pipeline and configure its execution role.** The book's [ML release workflow](examples/chapter-07/ml-release.yml) is supplied as an **inactive reference file**. Moving it into `.github/workflows/` will enable its triggers and can launch billable managed jobs. Keep it inactive until AWS role trust, required repository variables, instance quotas, approval gates and cost controls are confirmed.
 
-**Chapter 8 — adopt existing infrastructure into Terraform.** The canonical [`infrastructure/terraform/`](infrastructure/terraform/README.md) contains the full Chapter 8 book configuration (11 resources including GitHub OIDC infrastructure). The book explains when to import rather than create existing resources. Do not use `terraform apply` to create duplicate S3 buckets, IAM roles or a shared GitHub OIDC provider.
+**Chapter 8 — adopt existing infrastructure into Terraform.** The canonical [`infrastructure/terraform/`](infrastructure/terraform/README.md) contains the full Chapter 8 book configuration (10 managed resources, referencing the existing shared GitHub OIDC provider). The book explains when to import rather than create existing resources. The repository makes one intentional exception to the printed Terraform code: it looks up the shared GitHub OIDC provider instead of managing it; the original printed source is preserved under `examples/chapter-08/`. Do not use `terraform apply` to create duplicate S3 buckets, IAM roles or a shared GitHub OIDC provider.
 
 First create or identify a **separate, private S3 Terraform state bucket** according to Chapter 8. The state bucket must not be the project data bucket, and its lifecycle must be managed separately. Set `github_oidc_subject` to the exact subject of your GitHub repository, not the author's value. Initialise the backend with the same key as the book's Chapter 8 example:
 
@@ -189,7 +189,7 @@ terraform -chdir=infrastructure/terraform init -reconfigure \
   -backend-config="encrypt=true"
 ```
 
-**Before running this**, define `TF_STATE_BUCKET` for a state bucket you own and verify that its existing state belongs to this specific project. Initialise and validate, then follow the book's exact import and plan-review sequence. The GitHub OIDC provider at `token.actions.githubusercontent.com` may already be shared by other repositories: never import, replace or destroy it without ownership approval.
+**Before running this**, define `TF_STATE_BUCKET` for a state bucket you own and verify that its existing state belongs to this specific project. Initialise and validate, then follow the book's exact import and plan-review sequence. The GitHub OIDC provider at `token.actions.githubusercontent.com` is referenced as an existing shared resource. Verify that your AWS account has this provider before planning; do not import it into the project state.
 
 ## 6. Verify the Chapter 8 configuration before changes
 
@@ -207,7 +207,7 @@ terraform -chdir=infrastructure/terraform show -json project.tfplan > /tmp/sagem
 python scripts/review-chapter8-plan.py /tmp/sagemaker-ch08-plan.json
 ```
 
-**Stop here and review the output.** The additional plan guard fails closed if the plan would create, modify or delete the GitHub OIDC provider, if it would delete resources, or if unexpected resource types appear. This is deliberate: a shared provider cannot safely be treated as automatically owned by this stack. The guard is not an authorisation to apply. Only after completing the book's import steps, confirming resource ownership and reviewing the complete proposed changes should you run `terraform -chdir=infrastructure/terraform apply project.tfplan`. Provider, role and state ownership must be reviewed individually.
+**Stop here and review the output.** The additional plan guard fails closed if the plan would create, modify or delete the GitHub OIDC provider, if it would delete resources, or if unexpected resource types appear. The shared provider is referenced, not owned by this stack. The guard is not an authorisation to apply. Only after completing the book's import steps, confirming resource ownership and reviewing the complete proposed changes should you run `terraform -chdir=infrastructure/terraform apply project.tfplan`. Provider, role and state ownership must be reviewed individually.
 
 Terraform does not deploy SageMaker jobs, models or endpoints. The GitHub workflow remains inactive unless you deliberately enable it. This repository's Terraform checks were validated offline; a new, independent clean-account live deployment of this full Chapter 8 configuration has not been established.
 
@@ -430,7 +430,7 @@ terraform -chdir=infrastructure/terraform apply destroy.tfplan
 terraform -chdir=infrastructure/terraform state list
 ```
 
-**Critical:** The canonical Chapter 8 Terraform stack includes a potentially shared GitHub OIDC provider. Never apply the destruction plan if it proposes deleting or replacing shared infrastructure; separate its lifecycle into an approved owning state or otherwise settle ownership before destruction. A clean state listing should show no project resources. Verify the actual S3 bucket and IAM roles are absent with AWS CLI as well. **Do not** use `terraform destroy` against a backend whose ownership or contents you have not established.
+**Critical:** The canonical Chapter 8 Terraform stack reads the account-wide GitHub OIDC provider through a data source; it does not own or destroy that provider. Never apply the destruction plan if it proposes deleting or replacing shared infrastructure; separate its lifecycle into an approved owning state or otherwise settle ownership before destruction. A clean state listing should show no project resources. Verify the actual S3 bucket and IAM roles are absent with AWS CLI as well. **Do not** use `terraform destroy` against a backend whose ownership or contents you have not established.
 
 **D. Clean remaining non-Terraform resources deliberately.** Inspect any project-specific endpoint logs, monitoring data, model records and AWS alarms. CloudWatch log groups such as **`/aws/sagemaker/TrainingJobs`** and **`/aws/sagemaker/ProcessingJobs`** are shared; **do not delete them**. The endpoint log group may hold useful evidence; retain it or remove it only after separate review. Confirm the absence of active endpoints and jobs, and check Billing/Cost Explorer for delayed charges.
 
