@@ -1,0 +1,7 @@
+{
+  "EnableCapture": true,
+  "InitialSamplingPercentage": 100,
+  "DestinationS3Uri": "${CAPTURE_URI}",
+  "CaptureOptions": [{"CaptureMode":"Input"}, {"CaptureMode":"Output"}],
+  "CaptureContentTypeHeader": {"CsvContentTypes": ["text/csv"]}
+}
