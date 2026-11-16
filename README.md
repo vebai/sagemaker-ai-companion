@@ -1,10 +1,11 @@
 # Deploying Machine Learning with Amazon SageMaker AI — Companion Code
 
 **Book:** *Deploying Machine Learning with Amazon SageMaker AI: Training, Deployment, Automation, and Production Operations on AWS* — Victor Ebai  
-**Repository:** https://github.com/vebai/sagemaker-ai-companion  
 **Licence:** [MIT](LICENSE) for repository code. The book's prose and diagrams are separately copyrighted.
 
-**What you will do:** Set up a small customer-churn project, create your own AWS foundation, prepare data, run managed SageMaker processing and training, evaluate the result, and decide whether to register and deploy it. The book explains each decision; this repository supplies the accompanying source files and repeatable commands.
+This is the official companion repository for *Deploying Machine Learning with Amazon SageMaker AI* by Victor Ebai. It gives readers ready-to-use code, infrastructure configurations and step-by-step instructions to build and verify the book’s customer-churn workload on AWS: prepare data, train and evaluate a model, apply release gates, register an approved version, deploy it for inference, and observe and troubleshoot its behaviour.
+
+**What you gain:** A reproducible, evidence-backed path from a dataset to a working, verified SageMaker prediction service — including the skills to understand each stage, diagnose failures, control AWS costs and safely clean up the environment. The book provides the engineering explanations and decisions; this repository makes the practical implementation easier to follow and repeat.
 
 **Start safely:** You can clone, install dependencies, generate example data and run offline checks **without creating AWS resources**. Running managed processing, training or a real-time endpoint **can incur AWS charges**. You must create the AWS foundation before submitting jobs. The code does not automatically deploy an endpoint or clean up your account.
 
