@@ -43,3 +43,12 @@ crash.*.log
 data/customer_churn.csv
 evaluation/evaluation.json
 pipeline/pipeline_definition.json
+
+# Manuscript-created local state and deployment evidence
+workflow/env.sh
+workflow/deployments/
+inference/request.csv
+inference/response.json
+inference/local-approved-response.json
+workflow/bucket-check.err
+workflow/role-check.err
