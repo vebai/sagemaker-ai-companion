@@ -170,6 +170,7 @@ The setup script reads your AWS identity and exports these variables into **your
 
 ```bash
 terraform -chdir=infrastructure/terraform init -backend=false -input=false
+terraform -chdir=infrastructure/terraform-legacy init -backend=false -input=false
 ./scripts/validate.sh
 ```
 
@@ -421,7 +422,7 @@ aws s3api list-object-versions --bucket "$S3_BUCKET" --output json
 
 This snippet is a **destructive example**, not a substitute for an independently verified backup. If the S3 inventory changes after backup, stop and assess the new objects before running it.
 
-**C. Destroy only the Terraform-managed project stack.** From the repository root, with the **same Terraform backend, workspace and state** originally used for deployment:
+**C. Destroy only the Terraform-managed project resources, after resolving shared OIDC ownership.** From the repository root, with the **same Terraform backend, workspace and state** originally used for deployment:
 
 ```bash
 aws sts get-caller-identity
@@ -434,16 +435,16 @@ terraform -chdir=infrastructure/terraform apply destroy.tfplan
 terraform -chdir=infrastructure/terraform state list
 ```
 
-A clean state listing should show no project resources. Verify the actual S3 bucket and IAM roles are absent with AWS CLI as well. **Do not** use `terraform destroy` against a backend whose ownership or contents you have not established.
+**Critical:** The canonical Chapter 8 Terraform stack includes a potentially shared GitHub OIDC provider. Never apply the destruction plan if it proposes deleting or replacing shared infrastructure; separate its lifecycle into an approved owning state or otherwise settle ownership before destruction. A clean state listing should show no project resources. Verify the actual S3 bucket and IAM roles are absent with AWS CLI as well. **Do not** use `terraform destroy` against a backend whose ownership or contents you have not established.
 
 **D. Clean remaining non-Terraform resources deliberately.** Inspect any project-specific endpoint logs, monitoring data, model records and AWS alarms. CloudWatch log groups such as **`/aws/sagemaker/TrainingJobs`** and **`/aws/sagemaker/ProcessingJobs`** are shared; **do not delete them**. The endpoint log group may hold useful evidence; retain it or remove it only after separate review. Confirm the absence of active endpoints and jobs, and check Billing/Cost Explorer for delayed charges.
 
-**E. Keep the state backend separate.** The state bucket, its previous versions and lock history are **outside this Terraform stack**. Retain state evidence or destroy the backend only after confirming that **no other workspace, deployment or owner uses it**. Do not delete shared OIDC identity providers or GitHub roles: these are outside the SageMaker Terraform module.
+**E. Keep the state backend and shared identity resources separate.** The state bucket, its previous versions and lock history are **outside this Terraform stack**. Retain state evidence or destroy the backend only after confirming that **no other workspace, deployment or owner uses it**. Do not delete shared OIDC identity providers or GitHub roles: these are outside the SageMaker Terraform module.
 
 ## 11. Validation status and known limits
 
 - **Validated:** original customer-churn laboratory's managed processing, training, evaluation, model registration/approval, serving, monitoring and Pipeline exercises; GitHub Actions offline CI; an identity-only GitHub OIDC authentication test.
-- **Validated cleanup:** the original laboratory's SageMaker control-plane resources, versioned project S3 bucket and eight Terraform-managed resources were removed, with backup evidence preserved.
+- **Validated cleanup:** the original laboratory's SageMaker control-plane resources, versioned project S3 bucket and earlier eight-resource Terraform stack were removed, with backup evidence preserved. This does not prove a destroy of the 11-resource Chapter 8 stack.
 - **Not separately validated:** a fresh-account **live apply of the book's canonical Chapter 8 Terraform configuration**. Its configuration passed offline Terraform validation. Do not confuse that with a fresh deployment proof.
 - The repository's scripts are learning assets tied to the book's workflow; some intentionally submit jobs asynchronously or require a manually inspected hand-off file and an explicit approval decision. No automated workflow here approves models or deploys endpoints.
 - Always inspect current service quotas, AWS documentation, pricing and package compatibility before running billable exercises.
