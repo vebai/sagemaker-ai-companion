@@ -183,6 +183,7 @@ The setup script reads your AWS identity and exports these variables into **your
 ## 4. Check the repository without creating resources
 
 ```bash
+chmod +x ./scripts/validate.sh
 ./scripts/validate.sh
 ```
 
