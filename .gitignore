@@ -39,3 +39,7 @@ model.tar.gz
 crash.log
 crash.*.log
 # Local credentials and environment
+# Reader-generated local exercise files
+data/customer_churn.csv
+evaluation/evaluation.json
+pipeline/pipeline_definition.json
