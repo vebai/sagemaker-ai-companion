@@ -169,14 +169,12 @@ The setup script reads your AWS identity and exports these variables into **your
 ## 4. Check the repository without creating resources
 
 ```bash
-terraform -chdir=infrastructure/terraform init -backend=false -input=false
-terraform -chdir=infrastructure/terraform-legacy init -backend=false -input=false
 ./scripts/validate.sh
 ```
 
-**What this quick check proves:** Python source parses; pinned dependencies are declared; legacy IAM templates render as valid JSON; both Terraform configurations validate; and the source does not contain a fixed 12-digit account number. **What it does not prove:** permissions in your account, resource creation, completed jobs, model quality or endpoint health.
+**What this quick check proves:** Python source parses, dependencies are pinned and the book's canonical Terraform configuration validates offline. Archived source is checked separately by the validation tooling. **What it does not prove:** permissions in your account, resource creation, completed jobs, model quality or endpoint health.
 
-This checks Python syntax, pinned dependencies, legacy IAM policy templates and the Terraform configurations. It performs no AWS deployment. The first command downloads Terraform providers; **neither command deploys SageMaker resources**. GitHub's [Validate companion code](.github/workflows/validate.yml) runs similar checks on pushes. The separate [OIDC identity test](.github/workflows/oidc-identity.yml) is for the author's AWS account only; it is **not** a reader deployment workflow and does not grant a reader permissions.
+This checks Python syntax, pinned dependencies, legacy IAM policy templates and the Terraform configurations. It performs no AWS deployment. The script downloads Terraform providers for offline validation; **it does not deploy SageMaker resources**. GitHub's [Validate companion code](.github/workflows/validate.yml) runs similar checks on pushes. The separate [OIDC identity test](.github/workflows/oidc-identity.yml) is for the author's AWS account only; it is **not** a reader deployment workflow and does not grant a reader permissions.
 
 ## 5. Set up AWS infrastructure in the book's order
 
