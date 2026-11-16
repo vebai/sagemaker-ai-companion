@@ -21,7 +21,6 @@ EXPECTED = {
     "aws_iam_role_policy.workload",
     "aws_iam_role.pipeline",
     "aws_iam_role_policy.pipeline",
-    "aws_iam_openid_connect_provider.github",
     "aws_iam_role.github",
     "aws_iam_role_policy.github",
 }
