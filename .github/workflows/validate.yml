@@ -30,5 +30,10 @@ jobs:
       - name: Initialise Terraform without backend
         run: terraform -chdir=infrastructure/terraform init -backend=false -input=false
 
+      - name: Validate manuscript Chapter 8 Terraform without backend
+        run: |
+          terraform -chdir=infrastructure/terraform-book init -backend=false -input=false
+          terraform -chdir=infrastructure/terraform-book validate
+
       - name: Run offline validation
         run: bash scripts/validate.sh
