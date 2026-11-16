@@ -145,8 +145,7 @@ Path(
     "workflow/"
     "latest_deployment_verification_uri.txt"
 ).write_text(
-    uri + "
-"
+    uri + "\n"
 )
 
 print(uri)
