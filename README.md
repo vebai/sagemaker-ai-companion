@@ -4,7 +4,27 @@
 **Repository:** https://github.com/vebai/sagemaker-ai-companion  
 **Licence:** [MIT](LICENSE) for repository code. The book's prose and diagrams are separately copyrighted.
 
-> **Start here.** This repository supplies reusable source files for one customer-churn machine-learning workload. It is **not** a one-command AWS deployment or a free cloud sandbox. Follow the book's chapters for the decisions, permissions, approval gates, deployment, diagnosis and recovery. Use the steps below to install the tools, prepare your own account, run individual stages, verify evidence and clean up.
+**What you will do:** Set up a small customer-churn project, create your own AWS foundation, prepare data, run managed SageMaker processing and training, evaluate the result, and decide whether to register and deploy it. The book explains each decision; this repository supplies the accompanying source files and repeatable commands.
+
+**Start safely:** You can clone, install dependencies, generate example data and run offline checks **without creating AWS resources**. Running managed processing, training or a real-time endpoint **can incur AWS charges**. You must create the AWS foundation before submitting jobs. The code does not automatically deploy an endpoint or clean up your account.
+
+**Where to start:** [Install the tools](#2-install-tools-on-your-workstation) → [Clone and check the code](#3-clone-configure-python-and-verify-identity) → [Set up AWS infrastructure](#5-bootstrap-a-private-s3-backend-for-terraform) → [Run the exercises](#7-run-the-learning-workflow) → [Clean up](#10-cleanup-stop-charges-and-remove-only-your-project).
+
+## Read this first — what runs where?
+
+| Action | Where | AWS cost or change? | Success evidence |
+|---|---|---|---|
+| Clone and install Python packages | Local Mac/Linux | No AWS changes | Virtual environment, installed dependencies |
+| Generate data; run local processing | Local Mac/Linux | No AWS changes | CSV dataset and split files |
+| Run `scripts/validate.sh` | Local Mac/Linux | No AWS changes | Offline source/Terraform checks pass |
+| Run `scripts/setup-env.sh` | Local shell, reads AWS STS | Read-only AWS call | Correct AWS account, Region and bucket name |
+| Terraform `apply` | Local shell → AWS | **Creates infrastructure** | Project bucket and IAM roles exist |
+| Submit processing, training or evaluation | Local shell → SageMaker | **Billable managed jobs** | Job reaches `Completed`, outputs exist |
+| Register/approve a model | Local shell → SageMaker | **Changes registry state** | Correct package and approval evidence |
+| Deploy an endpoint (book Chapter 6) | AWS | **Billable while running, even when idle** | Inference request verified |
+| Clean up (book Chapter 10) | AWS | **Destructive** | Resources absent; evidence retained |
+
+**Do not run the next stage merely because the previous command exited successfully.** For SageMaker jobs, verify the managed job status and expected artefacts first.
 
 ## The workflow at a glance
 
@@ -96,7 +116,9 @@ python -m pip install --upgrade pip
 python -m pip install -r requirements.txt
 ```
 
-**Sign in to AWS.** Preferred example for an IAM Identity Center profile (substitute your configured profile):
+**What local setup proves:** You have a Python 3.11 environment and installed packages. It has **not** trained a model, deployed an endpoint or verified a live AWS architecture.
+
+**Sign in to AWS (read-only identity step).** Preferred example for an IAM Identity Center profile (substitute your configured profile):
 
 ```bash
 aws configure sso --profile sagemaker-lab
@@ -114,7 +136,16 @@ echo "$S3_BUCKET"
 echo "$SAGEMAKER_ROLE_ARN"
 ```
 
-The setup script runs `aws sts get-caller-identity`, sets `AWS_REGION=eu-west-2`, `PROJECT_NAME=sagemaker-churn`, your account-specific `S3_BUCKET` and workload role ARN. **It does not create AWS resources, set permissions or verify that the IAM role exists.** To change accounts, change your AWS profile/credentials and **source the script again**.
+The setup script reads your AWS identity and exports these variables into **your current shell**:
+
+| Variable | What it means |
+|---|---|
+| `AWS_REGION` | AWS Region used by the examples: `eu-west-2` |
+| `PROJECT_NAME` | Project prefix used for naming: `sagemaker-churn` |
+| `S3_BUCKET` | Account-specific bucket containing raw/processed data, models and evidence |
+| `SAGEMAKER_ROLE_ARN` | IAM execution role assumed by managed SageMaker jobs |
+
+**The script does not create resources, grant permissions or verify that the role exists.** If you open a new terminal, change accounts or switch AWS profiles, activate the Python environment and **source `scripts/setup-env.sh` again**.
 
 ## 4. Check the repository without creating resources
 
@@ -123,9 +154,13 @@ terraform -chdir=infrastructure/terraform init -backend=false -input=false
 ./scripts/validate.sh
 ```
 
+**What this quick check proves:** Python source parses; pinned dependencies are declared; IAM policy templates render as valid JSON; Terraform configuration validates; and the source does not contain a fixed 12-digit account number. **What it does not prove:** permissions in your account, resource creation, completed jobs, model quality or endpoint health.
+
 This checks Python syntax, pinned dependencies, IAM policy templates, Terraform formatting/validation and accidental fixed account IDs in Terraform source. The first command downloads Terraform providers; **neither command deploys SageMaker resources**. GitHub's [Validate companion code](.github/workflows/validate.yml) runs similar checks on pushes. The separate [OIDC identity test](.github/workflows/oidc-identity.yml) is for the author's AWS account only; it is **not** a reader deployment workflow and does not grant a reader permissions.
 
 ## 5. Bootstrap a private S3 backend for Terraform
+
+**Mandatory gate before managed jobs:** Your own project S3 bucket and SageMaker execution roles must exist and the caller must have the correct permissions. Complete this infrastructure section and Section 6 first; don't proceed just because local validation passed.
 
 Skip this section if your organisation provides an **approved, dedicated Terraform backend**; use its bucket and key instead. The backend holds **sensitive infrastructure state** and is not managed by this project stack.
 
@@ -135,7 +170,7 @@ For a new isolated personal lab, source `scripts/setup-env.sh`, then set a globa
 export TF_STATE_BUCKET="sagemaker-tfstate-$(aws sts get-caller-identity --query Account --output text)-eu-west-2"
 aws s3api head-bucket --bucket "$TF_STATE_BUCKET" 2>/dev/null && {
   echo "STOP: Backend bucket exists; inspect ownership/state before proceeding"
-  return 1 2>/dev/null || exit 1
+  exit 1
 }
 aws s3api create-bucket --bucket "$TF_STATE_BUCKET" \
   --region eu-west-2 \
@@ -295,22 +330,24 @@ python -m json.tool pipeline/pipeline_definition.json >/dev/null
 
 This builds a **local pipeline definition**; it does **not** publish or execute a pipeline. Follow Chapter 7 for creation/update, execution parameters, step inspection and release gating. The Pipeline can create multiple billable processing/training jobs per execution. GitHub's offline validation and OIDC identity-test workflows do **not** automatically run that pipeline.
 
-## 8. Know what each folder is for
+## 8. Follow the repository map
 
-| Path | Purpose | Related book chapters |
+Use this as the learning path; each link opens the relevant directory README. The stage number indicates **when to use it**, not a script to run automatically.
+
+| Path | When to use it / expected outcome | AWS effect | Book chapter |
 |---|---|---|
-| [data/](data/) | Deterministic synthetic churn data generator | 4 |
-| [processing/](processing/) | Schema checks and train/validation/test split | 4 |
-| [training/](training/) | SageMaker training entry point | 4 |
-| [evaluation/](evaluation/) | Evaluation metrics, threshold selection and release decision | 5 |
-| [inference/](inference/) | Serving implementation and prediction contract | 6 |
-| [workflow/](workflow/) | Submit managed jobs; package, register and record releases | 4–5 |
-| [pipeline/](pipeline/) | Build the SageMaker Pipeline definition | 7 |
-| [pipeline/release_source/](pipeline/release_source/) | Pipeline's release-packaging and serving source | 7 |
-| [infrastructure/terraform/](infrastructure/terraform/) | S3 bucket, encryption/public-access/versioning and two IAM roles | 8 |
-| [scripts/](scripts/) | Sourceable environment setup and offline validation | Start here |
+| [data/](data/) | Start: generate a reproducible CSV dataset | Local only | 4 |
+| [processing/](processing/) | After data: validate and split into train/validation/test | Local or billable via workflow | 4 |
+| [training/](training/) | After processing: produce model artefact | Billable managed training | 4 |
+| [evaluation/](evaluation/) | After training: report metrics and release decision | Local or billable via workflow | 5 |
+| [inference/](inference/) | After approved release: serving input/output contract | Used by billable endpoint | 6 |
+| [workflow/](workflow/) | Orchestrate manual stages, package and register releases | Managed jobs and AWS changes | 4–5 |
+| [pipeline/](pipeline/) | Build an automated definition; publish/run via book | Local build; billable when run | 7 |
+| [pipeline/release_source/](pipeline/release_source/) | Supporting code bundled into the Pipeline release | Runs inside Pipeline | 7 |
+| [infrastructure/terraform/](infrastructure/terraform/) | **Before managed jobs:** project bucket and IAM roles | Creates/destroys AWS infrastructure | 8 |
+| [scripts/](scripts/) | **Start here:** read AWS identity; offline validation | Read-only / local | Start |
 
-Read each directory's README for its script-specific contract. Generated files, evidence, credentials, local models and Terraform state should remain **outside Git**.
+Follow the linked README for each stage's **prerequisites → inputs → command → output → verification → next step**. The top-level `inference/` file is the manual release-serving implementation; `pipeline/release_source/` contains the corresponding code packaged by the managed Pipeline. They must remain compatible with the evaluated model. Generated files, credentials, local models and Terraform state should remain **outside Git**.
 
 ## 9. How to inspect failures
 
