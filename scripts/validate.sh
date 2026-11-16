@@ -51,7 +51,7 @@ python - <<'PY'
 from pathlib import Path
 import json
 
-root = Path("infrastructure/terraform")
+root = Path("infrastructure/terraform-legacy")
 account = "123456789012"
 bucket = f"sagemaker-churn-{account}-eu-west-2"
 
@@ -80,8 +80,8 @@ PY
 
 echo
 echo "[4/5] Terraform validation"
-terraform -chdir=infrastructure/terraform fmt -check -recursive
-terraform -chdir=infrastructure/terraform validate
+terraform -chdir=infrastructure/terraform-legacy fmt -check -recursive
+terraform -chdir=infrastructure/terraform-legacy validate
 echo "PASS: Terraform"
 
 echo
@@ -89,7 +89,7 @@ echo "[5/5] Account-specific reference check"
 python - <<'PY'
 from pathlib import Path
 
-root = Path("infrastructure/terraform")
+root = Path("infrastructure/terraform-legacy")
 
 for path in root.rglob("*"):
     if not path.is_file():
@@ -109,5 +109,10 @@ print("PASS: No original account ID in Terraform source")
 PY
 
 echo
+echo
+echo "[6/6] Manuscript Chapter 8 Terraform validation"
+terraform -chdir=infrastructure/terraform validate
+echo "PASS: Manuscript Terraform"
+
 echo "=== VALIDATION PASSED ==="
 echo "No AWS resources created or modified."

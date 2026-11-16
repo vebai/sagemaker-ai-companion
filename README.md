@@ -52,7 +52,7 @@ Local Mac/Linux shell
 
 The manuscript calls the local working directory **`sagemaker-churn`** and creates files under `data/`, `processing/`, `training/`, `workflow/`, `inference/`, `evaluation/`, `pipeline/` and `infrastructure/`. The clone command below gives the downloaded repository **that same local directory name**; GitHub's remote repository name does not determine its local folder name.
 
-**Choose one implementation path.** To follow the manuscript step by step, use its manual S3/IAM creation instructions in Chapter 4, and then proceed with the supplied source files. The root README also documents a smaller **optional** eight-resource Terraform foundation. It is **not the full Chapter 8 Terraform exercise**, which includes additional GitHub identity resources. Do not mix their states, apply the smaller Terraform stack over manually created resources, or run the book's full Chapter 8 imports against the smaller module.
+**Choose one implementation path.** To follow the manuscript step by step, use its manual S3/IAM creation instructions in Chapter 4, and then proceed with the supplied source files. The canonical `infrastructure/terraform/` directory now contains the **complete Chapter 8 Terraform source from the book**. The previous eight-resource configuration is retained under `infrastructure/terraform-legacy/` for audit only. Do not mix their states or apply over manually created resources. In the book's ordered path, create the initial S3/IAM resources in Chapter 4 and **adopt them into Terraform during Chapter 8**; do not blindly create duplicates.
 
 The manuscript creates `workflow/env.sh` locally in Chapter 4. This is an **account-specific generated file**, deliberately absent from Git. For the same environment exports, you can instead source the repository's `scripts/setup-env.sh` in each terminal; the two are alternatives, not consecutive requirements.
 
@@ -169,6 +169,8 @@ This checks Python syntax, pinned dependencies, IAM policy templates, Terraform 
 
 ## 5. Bootstrap a private S3 backend for Terraform
 
+**Book execution order:** In Chapter 4 use the manual S3/IAM setup; carry that workload through the book's earlier exercises. At Chapter 8, create or verify the independent Terraform state backend and **import** the book's already-created resources, including an existing shared GitHub OIDC provider only if this state is explicitly authorised to own its full lifecycle. Do not run the `terraform apply` example below as a shortcut for the manuscript's adoption sequence. The existing provider must not be recreated or accidentally destroyed.
+
 **Mandatory gate before managed jobs:** Your own project S3 bucket and SageMaker execution roles must exist and the caller must have the correct permissions. Follow the book's Chapter 4 manual setup **or** Sections 5–6 here for an isolated fresh lab. Do **not** perform both setups against the same resources. The Terraform path here is a smaller alternative and does not reproduce Chapter 8's full GitHub OIDC ownership exercise.
 
 Skip this section if your organisation provides an **approved, dedicated Terraform backend**; use its bucket and key instead. The backend holds **sensitive infrastructure state** and is not managed by this project stack.
@@ -200,7 +202,7 @@ aws s3api get-bucket-versioning --bucket "$TF_STATE_BUCKET"
 ```bash
 terraform -chdir=infrastructure/terraform init -reconfigure \
   -backend-config="bucket=$TF_STATE_BUCKET" \
-  -backend-config="key=sagemaker-churn/terraform.tfstate" \
+  -backend-config="key=sagemaker-churn/dev/terraform.tfstate" \
   -backend-config="region=eu-west-2" \
   -backend-config="encrypt=true"
 
@@ -211,9 +213,11 @@ terraform -chdir=infrastructure/terraform state list
 
 **Stop if the backend already contains state you do not own.** Never initialise a new empty backend over a prior deployment and assume Terraform now owns its existing resources.
 
-## 6. Review and deploy the supporting AWS infrastructure
+## 6. Adopt and verify the book's Chapter 8 Terraform infrastructure
 
-**Optional companion Terraform foundation (not the complete book Chapter 8 configuration):** The Terraform stack in [infrastructure/terraform/](infrastructure/terraform/) manages **eight resources**: one project S3 bucket, its public-access/versioning/encryption controls, two SageMaker IAM roles and two inline policies. It does **not** deploy managed SageMaker jobs, pipelines, models, endpoints, CloudWatch logs or the GitHub OIDC provider.
+**Do not run an unreviewed fresh apply here.** The book's Chapter 8 uses `terraform import` to adopt previously created project resources. An already-existing account-wide GitHub OIDC provider is **shared infrastructure**: verify current ownership and use a separately governed import/adoption decision. The example plan/apply below is applicable only after the complete adoption and resource-ownership sequence has been followed.
+
+**Canonical Chapter 8 Terraform:** The stack in [infrastructure/terraform/](infrastructure/terraform/) reproduces the book's full configuration: project S3 bucket and its three controls, two SageMaker IAM roles and their policies, a GitHub OIDC provider, GitHub delivery role and policy (**11 managed resources**). The earlier eight-resource stack is archived under [infrastructure/terraform-legacy/](infrastructure/terraform-legacy/) and must never share the canonical stack's backend key. The canonical configuration does **not** manage SageMaker jobs, model packages, endpoints or CloudWatch logs.
 
 ```bash
 source scripts/setup-env.sh
@@ -459,7 +463,7 @@ A clean state listing should show no project resources. Verify the actual S3 buc
 
 - **Validated:** original customer-churn laboratory's managed processing, training, evaluation, model registration/approval, serving, monitoring and Pipeline exercises; GitHub Actions offline CI; an identity-only GitHub OIDC authentication test.
 - **Validated cleanup:** the original laboratory's SageMaker control-plane resources, versioned project S3 bucket and eight Terraform-managed resources were removed, with backup evidence preserved.
-- **Not separately validated:** a clean-account **live apply of the refactored public Terraform configuration**. Its Terraform and IAM templates passed offline checks. Do not confuse that with a fresh deployment proof.
+- **Not separately validated:** a fresh-account **live apply of the book's canonical Chapter 8 Terraform configuration**. Its configuration passed offline Terraform validation. Do not confuse that with a fresh deployment proof.
 - The repository's scripts are learning assets tied to the book's workflow; some intentionally submit jobs asynchronously or require a manually inspected hand-off file and an explicit approval decision. No automated workflow here approves models or deploys endpoints.
 - Always inspect current service quotas, AWS documentation, pricing and package compatibility before running billable exercises.
 

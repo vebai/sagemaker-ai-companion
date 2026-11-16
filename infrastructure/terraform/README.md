@@ -1,47 +1,26 @@
-# Foundation — Terraform infrastructure
+# Chapter 8 — Full Terraform configuration from the book
 
-**Path:** [Start](../../README.md) → **AWS foundation** → [Data](../../data/README.md) → [Managed workflow](../../workflow/README.md)  
-**Book:** Chapter 8 · **Cost:** creates S3/IAM resources; storage, S3 versions, logs and managed workloads may incur AWS charges
+**Source:** Section 8.6 of *Deploying Machine Learning with Amazon SageMaker AI*, 16 November 2026 manuscript.
 
-## Purpose and prerequisites
-The Terraform configuration manages **eight** project-owned resources: the project S3 bucket, its public-access/versioning/encryption controls, two SageMaker execution IAM roles and their inline policies. It does **not** deploy SageMaker jobs, a Pipeline, model endpoints, CloudWatch log groups, a GitHub OIDC provider or its test roles.
+This directory contains the **book's** `versions.tf`, `variables.tf`, `main.tf`, `outputs.tf` and `terraform.tfvars.example`, extracted without changing their intended resource configuration.
 
-Before an apply, install Terraform >= 1.10, authenticate AWS CLI to the correct account, use Region `eu-west-2`, verify IAM/S3 permissions and prepare a **separate, private S3 bucket for Terraform state**. The project bucket must not be used as its own backend. Full, copyable backend bootstrap commands are in the [root README](../../README.md#5-bootstrap-a-private-s3-backend-for-terraform).
+The original eight-resource companion implementation remains in [`../terraform-legacy/`](../terraform-legacy/README.md). **Use one Terraform configuration and one state at a time. Do not initialise the two projects with the same backend key.**
 
-## Offline validation (no AWS resources created)
-From the repository root:
-```bash
-terraform -chdir=infrastructure/terraform init -backend=false -input=false
-terraform -chdir=infrastructure/terraform validate
-./scripts/validate.sh
-```
-
-## Apply (AWS resources created)
-First initialise the dedicated backend using the root README. Then, from the repository root:
-```bash
-source scripts/setup-env.sh
-aws sts get-caller-identity
-terraform -chdir=infrastructure/terraform workspace show
-terraform -chdir=infrastructure/terraform plan -out=project.tfplan
-terraform -chdir=infrastructure/terraform show project.tfplan
-# Review the complete plan and account before you authorise:
-terraform -chdir=infrastructure/terraform apply project.tfplan
-```
-
-**Verify:** `aws s3api head-bucket --bucket "$S3_BUCKET"` and `aws iam get-role --role-name SageMakerChurnExecutionRole` plus `SageMakerChurnPipelineRole`; verify role trust and permissions. State ownership matters: **do not adopt or overwrite existing manually created resources without the book's Chapter 8 procedure**. The static validation does not establish a successful deployment from a fresh account.
-
-## Destroy only after dependent AWS resources have been removed
-Follow [root cleanup](../../README.md#10-cleanup-stop-charges-and-remove-only-your-project) and Chapter 10. Back up evidence; stop/delete endpoints and remove model/registry/Pipeline resources; inspect S3 **all object versions and delete markers**. The bucket uses `force_destroy = false`, so it must be empty before Terraform can delete it.
+## Read-only/offline check
 
 ```bash
-aws sts get-caller-identity
-terraform -chdir=infrastructure/terraform workspace show
-terraform -chdir=infrastructure/terraform state list
-terraform -chdir=infrastructure/terraform plan -destroy -out=destroy.tfplan
-terraform -chdir=infrastructure/terraform show destroy.tfplan
-# Execute only the reviewed plan:
-terraform -chdir=infrastructure/terraform apply destroy.tfplan
-terraform -chdir=infrastructure/terraform state list
+terraform -chdir=infrastructure/terraform-book init -backend=false -input=false
+terraform -chdir=infrastructure/terraform-book validate
 ```
 
-**The separately created state bucket, any shared IAM/OIDC provider and GitHub test roles remain outside this stack.** Review state retention independently; do not destroy another project's state or shared infrastructure. **Failure boundary:** missing permissions, pre-existing role/bucket names, S3 versions or wrong backend/workspace. **Next:** [Prepare dataset](../../data/README.md).
+The build checks configuration syntax and provider schemas; it does **not** prove that an apply would succeed in a fresh account.
+
+## Before any live apply
+
+The book example manages the **GitHub OIDC provider** and the GitHub delivery role in addition to the S3 bucket and SageMaker roles. If `token.actions.githubusercontent.com` is already managed by another Terraform state or team, **do not create/import it into this state without approval and a complete lifecycle ownership decision**.
+
+The book's Chapter 8 teaches **adoption of existing AWS resources through imports**, not blind creation of duplicates. Review the exact AWS account, Region, state bucket, backend key and `github_oidc_subject` before planning. The sample uses `dev`, `eu-west-2`, and a separate state bucket with S3 locking and versioning. Plan actions, review before apply and stop if a protected shared provider is listed for deletion or replacement.
+
+The [Chapter 7 GitHub release workflow](../../examples/chapter-07/ml-release.yml) is staged as an **inactive example**. No push to this repository currently starts that workflow from the example file. Activation requires conscious configuration and cost review.
+
+**Never run `terraform apply` or `terraform destroy` just to validate this extracted example.**
