@@ -130,5 +130,9 @@ echo "[6/6] Manuscript Chapter 8 Terraform validation"
 terraform -chdir=infrastructure/terraform validate
 echo "PASS: Manuscript Terraform"
 
+echo
+echo "[reader assets] Chapter 7 IAM and Chapter 9 monitoring checks"
+python scripts/test-reader-assets.py
+
 echo "=== VALIDATION PASSED ==="
 echo "No AWS resources created or modified."
