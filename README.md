@@ -11,6 +11,25 @@ This is the official companion repository for *Deploying Machine Learning with A
 
 **Where to start:** [Install the tools](#2-install-tools-on-your-workstation) → [Clone and check the code](#3-clone-configure-python-and-verify-identity) → [Set up AWS infrastructure](#5-set-up-aws-infrastructure-in-the-books-order) → [Run the exercises](#7-run-the-learning-workflow) → [Clean up](#10-cleanup-stop-charges-and-remove-only-your-project).
 
+## Find the code for each book chapter
+
+Use this chapter index to open the relevant **source file or directory README**. Chapters 1–3 establish the concepts and architecture, so they have no separate executable code. Chapters 9–10 reuse files created earlier in the workload rather than introducing a second project.
+
+| Book chapter | Companion source and instructions | What you will use |
+|---|---|---|
+| **1 — Understanding the Machine-Learning Problem** | No standalone code — start with [the data contract and dataset generator](data/README.md) when you reach Chapter 4 | Define the classification problem, features and labels |
+| **2 — Understanding Amazon SageMaker AI** | No standalone code — see the [managed-workflow guide](workflow/README.md) for the later practical implementation | Understand processing, training, model packages and endpoints |
+| **3 — AWS Architecture for SageMaker** | No standalone code — see [infrastructure source](infrastructure/terraform/README.md) when you reach Chapter 8 | Understand the AWS service, identity and storage boundaries |
+| **4 — Preparing Data and Running Training Jobs** | [Dataset](data/README.md) · [Processing](processing/README.md) · [Training](training/README.md) · [Job submission scripts](workflow/README.md) | Generate data, submit managed processing and training, verify artefacts |
+| **5 — Evaluating, Registering and Governing Models** | [Evaluation script](evaluation/evaluate.py) · [Evaluation guide](evaluation/README.md) · [Release and registry scripts](workflow/README.md) | Measure model quality, package a passing candidate, register and approve |
+| **6 — Deploying Models for Inference** | [Inference handler](inference/inference.py) · [Inference guide](inference/README.md) · [Deployment verification record](workflow/write_deployment_verification.py) | Verify the approved model's real-time prediction path |
+| **7 — SageMaker Pipelines and Release Automation** | [Pipeline builder](pipeline/build_pipeline.py) · [Release-packaging source](pipeline/release_source/README.md) · [GitHub release workflow](examples/chapter-07/ml-release.yml) | Build and inspect the Pipeline; review the inactive CI/CD delivery example |
+| **8 — Production Security and Infrastructure as Code** | [Canonical Terraform configuration](infrastructure/terraform/README.md) · [Terraform source files](infrastructure/terraform/main.tf) · [Book's original OIDC example](examples/chapter-08/manuscript-main.tf) | Review identity and infrastructure ownership; import existing resources safely |
+| **9 — Observing SageMaker and Model Health** | [Inference handler](inference/inference.py) · [Deployment verification](workflow/write_deployment_verification.py) · [Troubleshooting guide](#9-how-to-inspect-failures) | Inspect runtime evidence, invocation behaviour and model-health boundaries |
+| **10 — Troubleshooting, Recovery and Cost Control** | [Troubleshooting guide](#9-how-to-inspect-failures) · [Cleanup instructions](#10-cleanup-stop-charges-and-remove-only-your-project) · [Versioned S3 cleanup helper](workflow/empty_versioned_bucket.sh) | Diagnose failures, preserve evidence and clean up project-owned resources |
+
+**Start here:** [Install and clone](#3-clone-configure-python-and-verify-identity) → [check prerequisites](#1-before-creating-anything-in-aws) → follow the book's chapters in order. All relative links above open files in this repository. The Chapter 7 release workflow is a reference under `examples/`, not an automatically running GitHub Action.
+
 ## Read this first — what runs where?
 
 | Action | Where | AWS cost or change? | Success evidence |
@@ -439,7 +458,7 @@ terraform -chdir=infrastructure/terraform state list
 ## 11. Validation status and known limits
 
 - **Validated:** original customer-churn laboratory's managed processing, training, evaluation, model registration/approval, serving, monitoring and Pipeline exercises; GitHub Actions offline CI; an identity-only GitHub OIDC authentication test.
-- **Validated cleanup:** the original laboratory's SageMaker control-plane resources, versioned project S3 bucket and earlier eight-resource Terraform stack were removed, with backup evidence preserved. This does not prove a destroy of the 11-resource Chapter 8 stack.
+- **Validated cleanup:** the original laboratory's SageMaker control-plane resources, versioned project S3 bucket and earlier eight-resource Terraform stack were removed, with backup evidence preserved. This does not prove a destroy of the canonical ten-resource Chapter 8 stack.
 - **Not separately validated:** a fresh-account **live apply of the book's canonical Chapter 8 Terraform configuration**. Its configuration passed offline Terraform validation. Do not confuse that with a fresh deployment proof.
 - The repository's scripts are learning assets tied to the book's workflow; some intentionally submit jobs asynchronously or require a manually inspected hand-off file and an explicit approval decision. No automated workflow here approves models or deploys endpoints.
 - Always inspect current service quotas, AWS documentation, pricing and package compatibility before running billable exercises.
