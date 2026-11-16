@@ -6,6 +6,19 @@ This directory contains the **book's** `versions.tf`, `variables.tf`, `main.tf`,
 
 The earlier eight-resource implementation is retained for migration review in [`../terraform-legacy/`](../terraform-legacy/README.md). **Use one Terraform configuration and one state at a time. Do not initialise the two projects with the same backend key.**
 
+## GitHub OIDC prerequisite
+
+Before planning the full Chapter 8 configuration, confirm whether the AWS account already has the GitHub Actions identity provider:
+
+```bash
+aws sts get-caller-identity
+aws iam list-open-id-connect-providers
+```
+
+The required provider URL is `https://token.actions.githubusercontent.com` with audience `sts.amazonaws.com`. If it does not exist, configure **one account-wide provider** through IAM → Identity providers using your organisation's approved process. It is not created or destroyed by this Terraform stack. If it already exists, reuse it; do not create a duplicate or import it into the project state. The exact `github_oidc_subject` must reference **your** repository and authorised ref.
+
+This provider lookup is read-only. It is separate from the project-owned GitHub delivery role, which Terraform manages.
+
 ## Read-only/offline check
 
 ```bash
