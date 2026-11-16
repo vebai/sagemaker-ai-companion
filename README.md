@@ -203,9 +203,11 @@ terraform -chdir=infrastructure/terraform workspace show
 terraform -chdir=infrastructure/terraform state list
 terraform -chdir=infrastructure/terraform plan -out=project.tfplan
 terraform -chdir=infrastructure/terraform show project.tfplan
+terraform -chdir=infrastructure/terraform show -json project.tfplan > /tmp/sagemaker-ch08-plan.json
+python scripts/review-chapter8-plan.py /tmp/sagemaker-ch08-plan.json
 ```
 
-**Stop here and review the output.** A plan is not an authorisation to apply. Only after completing the book's import steps, confirming resource ownership and reviewing the complete proposed changes should you run `terraform -chdir=infrastructure/terraform apply project.tfplan`. Provider, role and state ownership must be reviewed individually.
+**Stop here and review the output.** The additional plan guard fails closed if the plan would create, modify or delete the GitHub OIDC provider, if it would delete resources, or if unexpected resource types appear. This is deliberate: a shared provider cannot safely be treated as automatically owned by this stack. The guard is not an authorisation to apply. Only after completing the book's import steps, confirming resource ownership and reviewing the complete proposed changes should you run `terraform -chdir=infrastructure/terraform apply project.tfplan`. Provider, role and state ownership must be reviewed individually.
 
 Terraform does not deploy SageMaker jobs, models or endpoints. The GitHub workflow remains inactive unless you deliberately enable it. This repository's Terraform checks were validated offline; a new, independent clean-account live deployment of this full Chapter 8 configuration has not been established.
 
