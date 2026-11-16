@@ -10,6 +10,17 @@
 
 A failed evaluation takes the fail branch; a passing evaluation allows packaging and registration as a **pending** model package. **Registration is not approval or deployment.** Before publishing/running the Pipeline, verify your bucket, both SageMaker roles, caller permissions, processing/training quotas and raw CSV input. Use `source scripts/setup-env.sh` to supply `AWS_REGION`, `PROJECT_NAME`, `S3_BUCKET` and `SAGEMAKER_ROLE_ARN`.
 
+## Chapter 7 IAM source files
+
+The book creates `pipeline/pipeline-trust.json` and `pipeline/pipeline-role-policy.json`. The repository supplies account-neutral [trust](pipeline-trust.json.template) and [permissions](pipeline-role-policy.json.template) templates. Once your AWS identity and SageMaker workload role are established, render the files with the same names used in Chapter 7:
+
+```bash
+source scripts/setup-env.sh
+python scripts/render-iam.py pipeline
+```
+
+The renderer requires `SAGEMAKER_ROLE_ARN`, makes **no AWS changes** and refuses to overwrite different existing files. Rendered files are ignored by Git. Review the policy before following Chapter 7 to create or modify the Pipeline execution role.
+
 ## Local definition check (no managed jobs)
 From the repository root:
 ```bash
