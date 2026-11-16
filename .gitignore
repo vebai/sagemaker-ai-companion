@@ -52,3 +52,13 @@ inference/response.json
 inference/local-approved-response.json
 workflow/bucket-check.err
 workflow/role-check.err
+
+# Chapter 7 locally rendered account-specific IAM documents
+pipeline/pipeline-trust.json
+pipeline/pipeline-role-policy.json
+# Chapter 9 generated capture request and evidence
+monitoring/data-capture.json
+monitoring/baseline-train.csv
+monitoring/current-endpoint-config.json
+monitoring/monitored-endpoint-config.json
+monitoring/capture/

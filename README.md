@@ -13,7 +13,7 @@ This is the official companion repository for *Deploying Machine Learning with A
 
 ## Find the code for each book chapter
 
-Use this chapter index to open the relevant **source file or directory README**. Chapters 1–3 establish the concepts and architecture, so they have no separate executable code. Chapters 9–10 reuse files created earlier in the workload rather than introducing a second project.
+Use this chapter index to open the relevant **source file or directory README**. Chapters 1–3 establish the concepts and architecture, so they have no separate executable code. Chapters 9–10 extend the same workload, with Chapter 9 monitoring source and Chapter 10 cleanup guidance.
 
 | Book chapter | Companion source and instructions | What you will use |
 |---|---|---|
@@ -23,9 +23,9 @@ Use this chapter index to open the relevant **source file or directory README**.
 | **4 — Preparing Data and Running Training Jobs** | [Dataset](data/README.md) · [Processing](processing/README.md) · [Training](training/README.md) · [Job submission scripts](workflow/README.md) | Generate data, submit managed processing and training, verify artefacts |
 | **5 — Evaluating, Registering and Governing Models** | [Evaluation script](evaluation/evaluate.py) · [Evaluation guide](evaluation/README.md) · [Release and registry scripts](workflow/README.md) | Measure model quality, package a passing candidate, register and approve |
 | **6 — Deploying Models for Inference** | [Inference handler](inference/inference.py) · [Inference guide](inference/README.md) · [Deployment verification record](workflow/write_deployment_verification.py) | Verify the approved model's real-time prediction path |
-| **7 — SageMaker Pipelines and Release Automation** | [Pipeline builder](pipeline/build_pipeline.py) · [Release-packaging source](pipeline/release_source/README.md) · [GitHub release workflow](examples/chapter-07/ml-release.yml) | Build and inspect the Pipeline; review the inactive CI/CD delivery example |
+| **7 — SageMaker Pipelines and Release Automation** | [Pipeline builder](pipeline/build_pipeline.py) · [Pipeline IAM templates](pipeline/README.md) · [GitHub IAM templates](workflow/README.md) · [Release-packaging source](pipeline/release_source/README.md) · [GitHub release workflow](examples/chapter-07/ml-release.yml) | Build and inspect the Pipeline; review the inactive CI/CD delivery example |
 | **8 — Production Security and Infrastructure as Code** | [Canonical Terraform configuration](infrastructure/terraform/README.md) · [Terraform source files](infrastructure/terraform/main.tf) · [Book's original OIDC example](examples/chapter-08/manuscript-main.tf) | Review identity and infrastructure ownership; import existing resources safely |
-| **9 — Observing SageMaker and Model Health** | [Inference handler](inference/inference.py) · [Deployment verification](workflow/write_deployment_verification.py) · [Troubleshooting guide](#9-how-to-inspect-failures) | Inspect runtime evidence, invocation behaviour and model-health boundaries |
+| **9 — Observing SageMaker and Model Health** | [Monitoring guide](monitoring/README.md) · [Capture template](monitoring/data-capture.json.template) · [Input comparison script](monitoring/compare_input.py) · [Inference handler](inference/inference.py) | Inspect captured requests, compare input distributions and interpret health evidence |
 | **10 — Troubleshooting, Recovery and Cost Control** | [Troubleshooting guide](#9-how-to-inspect-failures) · [Cleanup instructions](#10-cleanup-stop-charges-and-remove-only-your-project) · [Versioned S3 cleanup helper](workflow/empty_versioned_bucket.sh) | Diagnose failures, preserve evidence and clean up project-owned resources |
 
 **Start here:** [Install and clone](#3-clone-configure-python-and-verify-identity) → [check prerequisites](#1-before-creating-anything-in-aws) → follow the book's chapters in order. All relative links above open files in this repository. The Chapter 7 release workflow is a reference under `examples/`, not an automatically running GitHub Action.
@@ -354,6 +354,7 @@ Use this as the learning path; each link opens the relevant directory README. Th
 | [pipeline/](pipeline/) | Build an automated definition; publish/run via book | Local build; billable when run | 7 |
 | [pipeline/release_source/](pipeline/release_source/) | Supporting code bundled into the Pipeline release | Runs inside Pipeline | 7 |
 | [infrastructure/terraform/](infrastructure/terraform/) | **Chapter 8:** adopt and govern the book's full infrastructure configuration | Manages AWS infrastructure | 8 |
+| [monitoring/](monitoring/) | Chapter 9: data capture and input comparison | Local source; AWS capture has costs | 9 |
 | [scripts/](scripts/) | **Start here:** read AWS identity; offline validation | Read-only / local | Start |
 
 Follow the linked README for each stage's **prerequisites → inputs → command → output → verification → next step**. The top-level `inference/` file is the manual release-serving implementation; `pipeline/release_source/` contains the corresponding code packaged by the managed Pipeline. They must remain compatible with the evaluated model. Generated files, credentials, local models and Terraform state should remain **outside Git**.

@@ -20,7 +20,9 @@ source scripts/setup-env.sh
 echo "$AWS_REGION $S3_BUCKET $SAGEMAKER_ROLE_ARN"
 ```
 
-`setup-env.sh` exports `AWS_REGION`, `PROJECT_NAME`, `S3_BUCKET` and `SAGEMAKER_ROLE_ARN` into the current shell. **It does not create the bucket or IAM role** and does not test your SageMaker quotas.
+`setup-env.sh` exports the seven Chapter 4 variables: `AWS_REGION`, `AWS_DEFAULT_REGION`, `ACCOUNT_ID`, `PROJECT_NAME`, `S3_BUCKET`, `SAGEMAKER_ROLE_NAME` and `SAGEMAKER_ROLE_ARN` into the current shell. **It does not create the bucket or IAM role** and does not test your SageMaker quotas.
+
+**Chapter 7 IAM source:** `python scripts/render-iam.py pipeline` and `python scripts/render-iam.py github` create the corresponding book filenames from local templates after the required variables are exported. The renderer makes no AWS calls and never overwrites different existing files. See the [Pipeline](../pipeline/README.md) and [workflow](../workflow/README.md) guides.
 
 **Chapter 8 plan review:** After generating the full book Terraform plan, run `terraform -chdir=infrastructure/terraform show -json project.tfplan > /tmp/sagemaker-ch08-plan.json`, then `python scripts/review-chapter8-plan.py /tmp/sagemaker-ch08-plan.json`. It blocks changes to a shared GitHub OIDC provider, resource deletions and unexpected managed resources; it never applies changes.
 
