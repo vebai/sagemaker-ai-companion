@@ -5,6 +5,12 @@
 
 This is the official companion repository for *Deploying Machine Learning with Amazon SageMaker AI* by Victor Ebai. It gives readers ready-to-use code, infrastructure configurations and step-by-step instructions to build and verify the book’s customer-churn workload on AWS: prepare data, train and evaluate a model, apply release gates, register an approved version, deploy it for inference, and observe and troubleshoot its behaviour.
 
+## Get the book
+
+**[Buy on Amazon UK](https://www.amazon.co.uk/dp/B0HS2PZHN9)** · **[Buy on Amazon US](https://www.amazon.com/dp/B0HS2PZHN9)**
+
+The Amazon UK listing offers paperback and Kindle editions.
+
 **What you gain:** A reproducible, evidence-backed path from a dataset to a working, verified SageMaker prediction service — including the skills to understand each stage, diagnose failures, control AWS costs and safely clean up the environment. The book provides the engineering explanations and decisions; this repository makes the practical implementation easier to follow and repeat.
 
 **Start safely:** You can clone, install dependencies, generate example data and run offline checks **without creating AWS resources**. Running managed processing, training or a real-time endpoint **can incur AWS charges**. Complete the book's Chapter 4 AWS foundation before submitting jobs. The code does not automatically deploy an endpoint or clean up your account.
@@ -48,23 +54,20 @@ Use this chapter index to open the relevant **source file or directory README**.
 
 ## The workflow at a glance
 
-```text
-Local Mac/Linux shell
-  ├── Python dataset generation ──> S3 raw/customer_churn.csv
-  ├── Chapter 4 AWS setup ──> project S3 bucket + SageMaker execution role
-  ├── Chapter 8 Terraform ──> adopt existing project/CI identity resources
-  └── SageMaker submissions (managed AWS compute; billed when used)
-        Processing ──> S3 processed/{train,validation,test}/data.csv
-        Training ──> S3 model.tar.gz
-        Evaluation ──> evaluation.json + release decision
-        Passing candidate ──> packaged release ──> Model Registry
-        Explicit approval ──> endpoint deployment and invocation (book)
-        SageMaker Pipeline ──> automated processing, training,
-                               evaluation, conditional packaging/registration
-        Monitoring and diagnosis ──> evidence (book)
-        Cleanup ──> remove model/endpoint/registry resources,
-                    empty versioned project bucket, Terraform destroy
+```mermaid
+flowchart TD
+    Data["Customer-churn data in S3"] --> Prepare["SageMaker Processing"]
+    Prepare --> Train["SageMaker Training"]
+    Train --> Evaluate{"Evaluation gate"}
+    Evaluate -->|Fail| Review["Review metrics and revise"]
+    Evaluate -->|Pass| Package["Package the release"]
+    Package --> Registry["SageMaker Model Registry"]
+    Registry --> Approval{"Manual approval"}
+    Approval -->|Approved| Endpoint["Real-time endpoint"]
+    Endpoint --> Monitor["Monitoring and diagnosis"]
 ```
+
+Chapter 4 establishes the S3 bucket and execution role. Chapter 7 automates processing, training, evaluation and conditional registration. Chapter 8 covers Terraform adoption of existing infrastructure. Chapter 10 covers cleanup.
 
 **Environment:** AWS Region `eu-west-2` (London); Python **3.11**; pinned dependencies from [requirements.txt](requirements.txt); Terraform **>= 1.10** with AWS provider 6.x. Examples in `workflow/` and `pipeline/` currently request **`ml.m5.xlarge`** for processing/training and **`ml.m5.large`** for real-time inference. These instance types must be available and permitted in *your* account and Region.
 
@@ -91,50 +94,7 @@ Each folder README identifies its prerequisites, inputs, command, expected evide
 
 ## 2. Install tools on your workstation
 
-**macOS (Homebrew).** If Homebrew is not installed, first follow https://brew.sh/ . In Terminal:
-
-```bash
-brew update
-brew install git awscli python@3.11
-brew tap hashicorp/tap
-brew install hashicorp/tap/terraform
-git --version
-aws --version
-python3.11 --version
-terraform version
-```
-
-**Ubuntu/Debian.** Install Git, basic prerequisites and AWS CLI v2; select the AWS CLI archive for your machine architecture (example below is x86_64; for ARM64 use `awscli-exe-linux-aarch64.zip`). See https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html .
-
-```bash
-sudo apt-get update
-sudo apt-get install -y git curl unzip gnupg ca-certificates wget
-curl -fsSL https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip -o /tmp/awscliv2.zip
-(cd /tmp && unzip -q awscliv2.zip && sudo ./aws/install)
-aws --version
-git --version
-```
-
-Install **Python 3.11** with its `venv` support from your distribution's appropriate supported packages or Python's official installation instructions (https://www.python.org/downloads/). On systems where `python3.11` is provided by APT:
-
-```bash
-sudo apt-get install -y python3.11 python3.11-venv
-python3.11 --version
-```
-
-Install Terraform from HashiCorp's signed APT repository (https://developer.hashicorp.com/terraform/install):
-
-```bash
-wget -qO- https://apt.releases.hashicorp.com/gpg | \
-  gpg --dearmor | sudo tee /usr/share/keyrings/hashicorp-archive-keyring.gpg >/dev/null
-echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(. /etc/os-release && echo "$VERSION_CODENAME") main" | \
-  sudo tee /etc/apt/sources.list.d/hashicorp.list
-sudo apt-get update
-sudo apt-get install -y terraform
-terraform version
-```
-
-For Fedora/RHEL, use the official HashiCorp and AWS CLI installation guides for `dnf`; verify Python 3.11 and `python3.11 -m venv` before continuing. **AWS CloudShell** already provides an authenticated AWS CLI in many accounts, but its Python/Terraform versions, storage persistence and installed packages must be checked; local Mac/Linux execution is the documented default.
+Follow the [workstation setup guide](docs/setup.md) to install Git, AWS CLI v2, Python 3.11 and Terraform. Then clone the repository and verify your AWS identity below.
 
 ## 3. Clone, configure Python, and verify identity
 
@@ -396,47 +356,7 @@ aws sagemaker list-monitoring-schedules --name-contains sagemaker-churn
 
 Stop in-progress jobs if necessary, and **delete project-owned endpoints** as soon as serving experiments are complete, using the actual names returned by AWS. Do **not** delete another team's resources. A SageMaker model, endpoint configuration, registered package and pipeline have separate lifecycles. After confirming there are no dependent endpoints or active executions, delete project-owned endpoint configurations, models, model package *versions*, model package group and pipeline in that order, using Chapter 10 and the actual resource names. Do not assume resources from a different run will have the example names.
 
-**B. Back up S3 data and versions before emptying the project bucket.** The bucket has Terraform `force_destroy = false` and **versioning enabled**. `aws s3 rm --recursive` alone is **not enough** to clear versions; it can create delete markers. Export artefacts and metadata to a separate, trusted location and verify the backup first.
-
-List versions and delete markers:
-
-```bash
-aws s3api list-object-versions --bucket "$S3_BUCKET" \
-  --query '{Versions:Versions[].{Key:Key,VersionId:VersionId},DeleteMarkers:DeleteMarkers[].{Key:Key,VersionId:VersionId}}' \
-  --output json
-```
-
-For a **dedicated, verified project bucket only**, after backing up everything, use the following explicit version-aware deletion. It stops if the account or bucket does not match the expected project naming pattern; it deletes **all versions and delete markers**, not just current objects:
-
-```bash
-# Run separately, only after backup and resource ownership checks.
-export CONFIRM_EMPTY_PROJECT_BUCKET="YES_DELETE_ALL_PROJECT_VERSIONS"
-python - <<'PY'
-import boto3, os
-s = boto3.Session(region_name="eu-west-2")
-account = s.client("sts").get_caller_identity()["Account"]
-bucket = f"sagemaker-churn-{account}-eu-west-2"
-assert os.getenv("CONFIRM_EMPTY_PROJECT_BUCKET") == "YES_DELETE_ALL_PROJECT_VERSIONS"
-assert os.environ["S3_BUCKET"] == bucket
-s3 = s.client("s3")
-items = []
-for page in s3.get_paginator("list_object_versions").paginate(Bucket=bucket):
-    items += [{"Key": o["Key"], "VersionId": o["VersionId"]}
-              for field in ("Versions", "DeleteMarkers")
-              for o in page.get(field, [])]
-print("Versions and markers selected:", len(items))
-for start in range(0, len(items), 1000):
-    result = s3.delete_objects(
-        Bucket=bucket, Delete={"Objects": items[start:start+1000]})
-    if result.get("Errors"):
-        raise RuntimeError(result["Errors"])
-print("Deletion requests completed; list the bucket versions again to verify")
-PY
-unset CONFIRM_EMPTY_PROJECT_BUCKET
-aws s3api list-object-versions --bucket "$S3_BUCKET" --output json
-```
-
-This snippet is a **destructive example**, not a substitute for an independently verified backup. If the S3 inventory changes after backup, stop and assess the new objects before running it.
+**B. Back up S3 data and versions before emptying the project bucket.** Follow the [versioned S3 cleanup guide](docs/cleanup.md) after verifying ownership and a separate backup. This step permanently deletes object versions and delete markers.
 
 **C. Destroy only the Terraform-managed project resources, after resolving shared OIDC ownership.** From the repository root, with the **same Terraform backend, workspace and state** originally used for deployment:
 
@@ -467,3 +387,12 @@ terraform -chdir=infrastructure/terraform state list
 
 **Engineering discipline:** establish context → build deliberately → observe behaviour → diagnose failures → verify outcomes.  
 **Release rule:** compute success ≠ model quality ≠ production health.
+
+## Continue with the book
+
+**[Buy on Amazon UK](https://www.amazon.co.uk/dp/B0HS2PZHN9)** · **[Buy on Amazon US](https://www.amazon.com/dp/B0HS2PZHN9)** for the complete architecture explanations, governance decisions and guided troubleshooting exercises.
+
+**Also by Victor Ebai**
+
+- [*Terraform on AWS in Practice*](https://github.com/vebai/terraform-on-aws-in-practice) covers building, changing and troubleshooting AWS infrastructure.
+- [*Kubernetes in Practice*](https://github.com/vebai/kubernetes-in-practice) covers deploying, operating and troubleshooting Kubernetes applications from Docker to Amazon EKS.
