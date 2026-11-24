@@ -17,6 +17,9 @@ for script in scripts/*.sh workflow/*.sh; do
 done
 echo "Note: scripts/setup-env.sh and workflow/empty_versioned_bucket.sh are sourced helpers."
 
+echo "[safety] Verify versioned-S3 cleanup identity guards (AWS mocked)"
+bash scripts/test-bucket-guard.sh
+
 # Initialise providers without accessing or modifying backend state.
 terraform -chdir=infrastructure/terraform init -backend=false -input=false >/dev/null
 terraform -chdir=infrastructure/terraform-legacy init -backend=false -input=false >/dev/null
