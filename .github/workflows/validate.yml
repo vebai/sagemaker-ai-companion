@@ -30,7 +30,7 @@ jobs:
       - name: Initialise legacy Terraform without backend
         run: terraform -chdir=infrastructure/terraform-legacy init -backend=false -input=false
 
-      - name: Validate manuscript Chapter 8 Terraform without backend
+      - name: Validate Chapter 8 Terraform without backend
         run: |
           terraform -chdir=infrastructure/terraform init -backend=false -input=false
           terraform -chdir=infrastructure/terraform validate

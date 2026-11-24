@@ -1,15 +1,39 @@
-# Deploying Machine Learning with Amazon SageMaker AI — Companion Code
+# Deploying Machine Learning with Amazon SageMaker AI
 
-**Book:** *Deploying Machine Learning with Amazon SageMaker AI: Training, Deployment, Automation, and Production Operations on AWS* — Victor Ebai  
-**Licence:** [MIT](LICENSE) for repository code. The book's prose and diagrams are separately copyrighted.
+This is the companion repository for *Deploying Machine Learning with Amazon SageMaker AI: Training, Deployment, Automation, and Production Operations on AWS* by **Victor Ebai**. It provides the customer-churn example, Python scripts, Terraform configurations, IAM templates and practical verification guidance.
 
-This is the official companion repository for *Deploying Machine Learning with Amazon SageMaker AI* by Victor Ebai. It gives readers ready-to-use code, infrastructure configurations and step-by-step instructions to build and verify the book’s customer-churn workload on AWS: prepare data, train and evaluate a model, apply release gates, register an approved version, deploy it for inference, and observe and troubleshoot its behaviour.
+**The book is fully self-contained.** Its explanations, commands, technical decisions and core examples do not require this repository. These files provide convenient, testable copies for readers who prefer to clone and run the exercises.
 
-**What you gain:** A reproducible, evidence-backed path from a dataset to a working, verified SageMaker prediction service — including the skills to understand each stage, diagnose failures, control AWS costs and safely clean up the environment. The book provides the engineering explanations and decisions; this repository makes the practical implementation easier to follow and repeat.
+## Get the book
 
-**Start safely:** You can clone, install dependencies, generate example data and run offline checks **without creating AWS resources**. Running managed processing, training or a real-time endpoint **can incur AWS charges**. Complete the book's Chapter 4 AWS foundation before submitting jobs. The code does not automatically deploy an endpoint or clean up your account.
+**[Amazon UK — book page](https://www.amazon.co.uk/dp/B0HS2PZHN9)** (default) · [Amazon US](https://www.amazon.com/dp/B0HS2PZHN9) · [Find on Amazon India](https://www.amazon.in/s?k=Deploying+Machine+Learning+with+Amazon+SageMaker+AI+Victor+Ebai&i=stripbooks)
 
-**Where to start:** [Install the tools](#2-install-tools-on-your-workstation) → [Clone and check the code](#3-clone-configure-python-and-verify-identity) → [Set up AWS infrastructure](#5-set-up-aws-infrastructure-in-the-books-order) → [Run the exercises](#7-run-the-learning-workflow) → [Clean up](#10-cleanup-stop-charges-and-remove-only-your-project).
+**Quick navigation:** [Chapter files](#find-the-code-for-each-book-chapter) · [Cost and quotas](#1-before-creating-anything-in-aws) · [Install and clone](#3-clone-configure-python-and-verify-identity) · [Run workflow](#7-run-the-learning-workflow) · [Troubleshoot](#9-how-to-inspect-failures) · [Cleanup](#10-cleanup-stop-charges-and-remove-only-your-project)
+
+The learning journey moves from a defined ML problem through training, model release, deployment, automation, monitoring and evidence-based recovery.
+
+![Seven-stage SageMaker AI learning journey from understanding a machine-learning problem to building, deploying, automating, observing, diagnosing and recovering a model service; includes distinctions between training jobs, model artefacts, endpoints, model quality, production health and business outcomes.](docs/images/sagemaker-ai-overview.png)
+
+*Learning overview: a completed training job is not the same as a model artefact, a deployed endpoint or a reliable business outcome. Check evidence and acceptance criteria at every transition.*
+
+The practical method is **Understand → Build → Deploy → Automate → Observe → Diagnose → Recover → Verify**. Use the book to understand the decisions; use the repository for reproducible code and lab evidence.
+
+## What you will build and practise
+
+- Prepare and split customer-churn data for repeatable machine-learning experiments.
+- Run managed processing and training jobs, evaluate results and apply a release gate.
+- Register an approved model version and deploy an endpoint deliberately when ready.
+- Build a SageMaker Pipeline and inspect the supplied, inactive CI/CD workflow.
+- Track service and model health, investigate failures and verify recovery.
+- Review account-specific AWS identities, infrastructure ownership, costs and safe cleanup.
+
+## Before you begin
+
+**First-time setup:** Follow [AWS costs and quotas](#1-before-creating-anything-in-aws), [tool installation](#2-install-tools-on-your-workstation) and [clone and identity verification](#3-clone-configure-python-and-verify-identity).
+
+You need Python **3.11**, Git, AWS CLI v2, Terraform for the infrastructure chapter, and an authorised AWS account for managed jobs. The examples use **AWS London (`eu-west-2`)**, but instance availability and quotas must be verified for the specific operation and instance type.
+
+**Costs and security:** SageMaker jobs, endpoints (including idle endpoints), S3 and CloudWatch can incur charges. Use a dedicated learning account, temporary credentials, quotas and budgets. Do not run Terraform against existing resources until ownership and imports are understood. Start with offline validation; no script silently deploys an inference endpoint.
 
 ## Find the code for each book chapter
 
@@ -24,7 +48,7 @@ Use this chapter index to open the relevant **source file or directory README**.
 | **5 — Evaluating, Registering and Governing Models** | [Evaluation script](evaluation/evaluate.py) · [Evaluation guide](evaluation/README.md) · [Release and registry scripts](workflow/README.md) | Measure model quality, package a passing candidate, register and approve |
 | **6 — Deploying Models for Inference** | [Inference handler](inference/inference.py) · [Inference guide](inference/README.md) · [Deployment verification record](workflow/write_deployment_verification.py) | Verify the approved model's real-time prediction path |
 | **7 — SageMaker Pipelines and Release Automation** | [Pipeline builder](pipeline/build_pipeline.py) · [Pipeline IAM templates](pipeline/README.md) · [GitHub IAM templates](workflow/README.md) · [Release-packaging source](pipeline/release_source/README.md) · [GitHub release workflow](examples/chapter-07/ml-release.yml) | Build and inspect the Pipeline; review the inactive CI/CD delivery example |
-| **8 — Production Security and Infrastructure as Code** | [Canonical Terraform configuration](infrastructure/terraform/README.md) · [Terraform source files](infrastructure/terraform/main.tf) · [Book's original OIDC example](examples/chapter-08/manuscript-main.tf) | Review identity and infrastructure ownership; import existing resources safely |
+| **8 — Production Security and Infrastructure as Code** | [Canonical Terraform configuration](infrastructure/terraform/README.md) · [Terraform source files](infrastructure/terraform/main.tf) · [Book-version OIDC example](examples/chapter-08/book-main.tf) | Review identity and infrastructure ownership; import existing resources safely |
 | **9 — Observing SageMaker and Model Health** | [Monitoring guide](monitoring/README.md) · [Capture template](monitoring/data-capture.json.template) · [Input comparison script](monitoring/compare_input.py) · [Inference handler](inference/inference.py) | Inspect captured requests, compare input distributions and interpret health evidence |
 | **10 — Troubleshooting, Recovery and Cost Control** | [Troubleshooting guide](#9-how-to-inspect-failures) · [Cleanup instructions](#10-cleanup-stop-charges-and-remove-only-your-project) · [Versioned S3 cleanup helper](workflow/empty_versioned_bucket.sh) | Diagnose failures, preserve evidence and clean up project-owned resources |
 
@@ -46,25 +70,10 @@ Use this chapter index to open the relevant **source file or directory README**.
 
 **Do not run the next stage merely because the previous command exited successfully.** For SageMaker jobs, verify the managed job status and expected artefacts first.
 
-## The workflow at a glance
+## Workflow and environment
 
-```text
-Local Mac/Linux shell
-  ├── Python dataset generation ──> S3 raw/customer_churn.csv
-  ├── Chapter 4 AWS setup ──> project S3 bucket + SageMaker execution role
-  ├── Chapter 8 Terraform ──> adopt existing project/CI identity resources
-  └── SageMaker submissions (managed AWS compute; billed when used)
-        Processing ──> S3 processed/{train,validation,test}/data.csv
-        Training ──> S3 model.tar.gz
-        Evaluation ──> evaluation.json + release decision
-        Passing candidate ──> packaged release ──> Model Registry
-        Explicit approval ──> endpoint deployment and invocation (book)
-        SageMaker Pipeline ──> automated processing, training,
-                               evaluation, conditional packaging/registration
-        Monitoring and diagnosis ──> evidence (book)
-        Cleanup ──> remove model/endpoint/registry resources,
-                    empty versioned project bucket, Terraform destroy
-```
+The diagram near the start of this README summarises the complete learning path. The chapter index above links to the actual working files. Run the stages in book order, and verify each managed AWS job before continuing.
+
 
 **Environment:** AWS Region `eu-west-2` (London); Python **3.11**; pinned dependencies from [requirements.txt](requirements.txt); Terraform **>= 1.10** with AWS provider 6.x. Examples in `workflow/` and `pipeline/` currently request **`ml.m5.xlarge`** for processing/training and **`ml.m5.large`** for real-time inference. These instance types must be available and permitted in *your* account and Region.
 
@@ -467,3 +476,9 @@ terraform -chdir=infrastructure/terraform state list
 
 **Engineering discipline:** establish context → build deliberately → observe behaviour → diagnose failures → verify outcomes.  
 **Release rule:** compute success ≠ model quality ≠ production health.
+
+## Continue with the book
+
+The **[Amazon UK book page](https://www.amazon.co.uk/dp/B0HS2PZHN9)** provides the complete explanations, release decisions and operational troubleshooting exercises. For readers strengthening their AWS foundation, [AWS Cloud Engineering in 10 Days](https://github.com/vebai/aws-cloud-engineering-in-10-days) covers account context, IAM, EC2, networking and evidence-based verification.
+
+The reusable code is covered by the [MIT License](LICENSE); book text and this overview illustration remain © 2026 Victor Ebai.

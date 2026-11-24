@@ -137,9 +137,9 @@ assert 'data.aws_iam_openid_connect_provider.github.arn' in outputs
 print("PASS: shared GitHub OIDC provider referenced without lifecycle ownership")
 PY
 
-echo "[6/6] Manuscript Chapter 8 Terraform validation"
+echo "[6/6] Chapter 8 Terraform configuration validation"
 terraform -chdir=infrastructure/terraform validate
-echo "PASS: Manuscript Terraform"
+echo "PASS: Chapter 8 Terraform"
 
 echo
 echo "[reader assets] Chapter 7 IAM and Chapter 9 monitoring checks"

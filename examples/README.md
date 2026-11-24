@@ -15,6 +15,6 @@ terraform -chdir=infrastructure/terraform validate
 
 No deployment is performed by this example file in its current location.
 
-## Original Chapter 8 Terraform source
+## Chapter 8 book-version Terraform source
 
-The book's exact `main.tf` and `outputs.tf` listings are preserved under [`chapter-08/`](chapter-08/). The canonical repository configuration makes one intentional change: look up the account-wide GitHub OIDC provider without managing its lifecycle. This avoids accidental deletion or duplicate ownership. The manuscript has not yet been edited to reflect that correction.
+The book's exact `main.tf` and `outputs.tf` listings are preserved under [`chapter-08/`](chapter-08/). The canonical repository configuration makes one intentional change: look up the account-wide GitHub OIDC provider without managing its lifecycle. This avoids accidental deletion or duplicate ownership. Always follow the book's ownership and import steps before using the canonical infrastructure configuration.
