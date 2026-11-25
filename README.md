@@ -6,7 +6,7 @@ This is the companion repository for *Deploying Machine Learning with Amazon Sag
 
 ## Get the book
 
-**[Amazon UK — book page](https://www.amazon.co.uk/dp/B0HS2PZHN9)** (default) · [Amazon US](https://www.amazon.com/dp/B0HS2PZHN9) · [Amazon India (availability may vary)](https://www.amazon.in/dp/B0HS2PZHN9)
+**[Amazon UK — book page](https://www.amazon.co.uk/dp/B0HS2PZHN9)** · [Amazon US](https://www.amazon.com/dp/B0HS2PZHN9) · [Amazon India (availability may vary)](https://www.amazon.in/dp/B0HS2PZHN9)
 
 **Quick navigation:** [Chapter files](#find-the-code-for-each-book-chapter) · [Before AWS](#before-you-begin) · [Getting started](#3-clone-configure-python-and-verify-identity) · [Workflow](#7-run-the-learning-workflow) · [Troubleshooting](#9-how-to-inspect-failures) · [Cleanup](#10-cleanup-stop-charges-and-remove-only-your-project)
 
