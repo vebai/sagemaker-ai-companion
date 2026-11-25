@@ -4,9 +4,13 @@
 
 This is the companion repository for *Deploying Machine Learning with Amazon SageMaker AI: Training, Deployment, Automation, and Production Operations on AWS* by **Victor Ebai**. It contains the Python scripts, Terraform configuration and IAM templates for the book’s customer-churn workload. The book is self-contained, and these files let you run and inspect the exercises.
 
-## Get the paperback
+## Get the book on Amazon
 
-**[Amazon UK — Paperback](https://www.amazon.co.uk/dp/B0HS2PZHN9)** · [Amazon US](https://www.amazon.com/dp/B0HS2PZHN9) · [Amazon India (availability may vary)](https://www.amazon.in/dp/B0HS2PZHN9)
+<a id="get-the-paperback"></a>
+
+**Paperback:** [Amazon UK](https://www.amazon.co.uk/dp/B0HS2PZHN9) · [Amazon US](https://www.amazon.com/dp/B0HS2PZHN9) · [Amazon India](https://www.amazon.in/dp/B0HS2PZHN9)
+
+**Kindle eBook:** [Amazon UK](https://www.amazon.co.uk/dp/B0HS2CS26C) · [Amazon US](https://www.amazon.com/dp/B0HS2CS26C) · [Amazon India](https://www.amazon.in/dp/B0HS2CS26C)
 
 **Quick navigation:** [Before you begin](#before-you-begin) · [Getting started](#getting-started) · [Chapter guide](#chapter-guide) · [Validation](#verify-the-repository-files) · [Cleanup](#cleaning-up)
 
